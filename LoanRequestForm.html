@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Avadhi Nidhi Loan Request</title>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+:root{
+  --bg:#0b1220;
+  --card:#101a33;
+  --border:rgba(255,255,255,.15);
+  --primary:#6ea8fe;
+  --text:#ffffff;
+  --muted:#b5b5b5;
+  --error:#ff6b6b;
+  --radius:14px;
+  --shadow:0 12px 30px rgba(0,0,0,.35);
+}
+
+body{
+  margin:0;
+  padding:20px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+}
+
+form{
+  max-width:780px;
+  margin:auto;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px;
+  box-shadow:var(--shadow);
+}
+
+h2{
+  text-align:center;
+  margin-bottom:10px;
+}
+
+label{
+  display:block;
+  margin-top:14px;
+  font-weight:600;
+}
+
+input,select{
+  width:100%;
+  padding:10px;
+  margin-top:4px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#0b1220;
+  color:var(--text);
+  font-size:14px;
+}
+
+.input-row{
+  display:flex;
+  gap:10px;
+}
+
+.readonly{
+  background:#121a2f;
+}
+
+small{
+  color:var(--muted);
+  display:block;
+  margin-top:6px;
+}
+
+.error{
+  border-color:var(--error);
+}
+
+.error-message{
+  color:var(--error);
+  font-size:12px;
+  margin-top:4px;
+}
+
+.summary{
+  background:#0e1730;
+  border-left:4px solid var(--primary);
+  padding:12px;
+  margin-top:16px;
+  border-radius:10px;
+  white-space:pre-line;
+}
+
+canvas{
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-top:10px;
+  width:100%;
+  max-width:300px;
+  height:150px;
+  background:#fff;
+  touch-action:none;
+}
+
+.button-row{
+  display:flex;
+  gap:10px;
+  margin-top:20px;
+  flex-wrap:wrap;
+}
+
+button{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:var(--primary);
+  color:#000;
+  font-weight:700;
+  cursor:pointer;
+}
+
+button.secondary{
+  background:#2a3558;
+  color:#fff;
+}
+
+.hidden{display:none}
+
+@media(max-width:600px){
+  button{font-size:14px}
+}
+</style>
+</head>
+
+<body>
+
+<form id="loanForm">
+<h2>Avadhi Nidhi Loan Request</h2>
+
+<label>Request Date</label>
+<input id="requestDate" class="readonly" readonly>
+
+<label>Applicant Name</label>
+<input id="name" required>
+
+<label>Contact Number (UAE)</label>
+<div class="input-row">
+  <input value="+971" readonly style="max-width:70px">
+  <input id="contactUAE" maxlength="9">
+</div>
+
+<label>Contact Number (India – optional)</label>
+<div class="input-row">
+  <input value="+91" readonly style="max-width:70px">
+  <input id="contactIndia" maxlength="10">
+</div>
+
+<label>Loan Amount (Max AED 2000)</label>
+<input type="number" id="amount" step="100" required>
+<div id="amountError" class="error-message hidden">Maximum allowed amount is 2000</div>
+
+<label>Loan Required By Date</label>
+<input type="date" id="loanDate" required>
+
+<label>Reason</label>
+<select id="reason" required>
+  <option value="">Select</option>
+  <option>Annual Leave</option>
+  <option>Emergency Leave</option>
+  <option>Other</option>
+</select>
+
+<div id="otherReasonDiv" class="hidden">
+  <label>Please specify</label>
+  <input id="otherReason">
+</div>
+
+<label>Repayment Months (Max 5)</label>
+<input type="number" id="months" min="1" max="5" required>
+
+<div id="emiPreview" class="summary hidden"></div>
+
+<label>Repayment Start Date</label>
+<input type="date" id="repayStart" required>
+
+<label>Repayment End Date</label>
+<input type="date" id="repayEnd" required>
+
+<small>ℹ Repayment starts after a 2-month grace period as per Avadhi Nidhi rules.</small>
+
+<div class="summary" id="summaryMessage"></div>
+
+<label>Signature</label>
+<canvas id="signatureCanvas"></canvas>
+<button type="button" class="secondary" onclick="clearSignature()">Clear Signature</button>
+
+<div class="button-row">
+  <button type="button" onclick="downloadPDF()">Download PDF</button>
+  <button type="button" class="secondary" onclick="shareOnWhatsApp()">Share on WhatsApp</button>
+  <button type="button" class="secondary" onclick="window.print()">Print</button>
+  <button type="reset" class="secondary">Clear</button>
+</div>
+</form>
+
+<script>
+const { jsPDF } = window.jspdf;
+let canvas,ctx,drawing=false;
+
+/* ---------- Canvas ---------- */
+function initCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  ctx.setTransform(1,0,0,1,0,0);
+  canvas.width=300*dpr;
+  canvas.height=150*dpr;
+  ctx.scale(dpr,dpr);
+  ctx.lineWidth=2;
+  ctx.lineCap="round";
+  ctx.strokeStyle="#000";
+}
+
+function clearSignature(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  initCanvas();
+}
+
+function hasSignature(){
+  const d=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  return d.some(v=>v!==0);
+}
+
+/* ---------- Validation ---------- */
+function validateForm(){
+  if(!name.value) return alert("Name required"),false;
+  if(amount.value>2000) return alert("Amount exceeds limit"),false;
+  if(months.value>5) return alert("Maximum 5 months allowed"),false;
+  if(reason.value==="Other" && !otherReason.value) return alert("Specify reason"),false;
+  if(!hasSignature()) return alert("Signature required"),false;
+  return true;
+}
+
+/* ---------- Logic ---------- */
+function updateEMI(){
+  if(amount.value && months.value){
+    const emi=(amount.value/months.value).toFixed(2);
+    emiPreview.innerText=`Estimated EMI: AED ${emi} × ${months.value} months`;
+    emiPreview.classList.remove("hidden");
+  }
+}
+
+function autoDates(){
+  if(!loanDate.value||!months.value) return;
+  const d=new Date(loanDate.value);
+  d.setMonth(d.getMonth()+2);
+  repayStart.valueAsDate=d;
+  const e=new Date(d);
+  e.setMonth(e.getMonth()+Number(months.value));
+  repayEnd.valueAsDate=e;
+}
+
+function generateSummary(){
+  if(!name.value||!amount.value||!repayEnd.value) return;
+  summaryMessage.innerText=
+`Dear Avadhi Nidhi Committee,
+
+I request a loan of AED ${amount.value} for ${reason.value==="Other"?otherReason.value:reason.value}.
+I will repay the loan fully by ${repayEnd.value}.
+
+Requested by
+${name.value}`;
+}
+
+/* ---------- PDF ---------- */
+function buildPDF(){
+  const doc=new jsPDF();
+  doc.text("Avadhi Nidhi Loan Request",105,20,{align:"center"});
+  doc.text(summaryMessage.innerText,20,40);
+  doc.addImage(canvas.toDataURL(),"PNG",20,120,60,30);
+  return doc;
+}
+
+function downloadPDF(){
+  if(!validateForm()) return;
+  const d=new Date();
+  const file=`AvadhiNidhi_LoanRequest_${name.value}_${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}.pdf`;
+  buildPDF().save(file);
+}
+
+function shareOnWhatsApp(){
+  if(!validateForm()) return;
+  const d=new Date();
+  const file=`AvadhiNidhi_LoanRequest_${name.value}_${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}.pdf`;
+  const blob=buildPDF().output("blob");
+  if(navigator.share){
+    navigator.share({files:[new File([blob],file,{type:"application/pdf"})]});
+  }else{
+    window.open(`https://wa.me/?text=Loan request PDF: ${file}`);
+  }
+}
+
+/* ---------- Init ---------- */
+document.addEventListener("DOMContentLoaded",()=>{
+  canvas=document.getElementById("signatureCanvas");
+  ctx=canvas.getContext("2d");
+  initCanvas();
+  requestDate.value=new Date().toISOString().split("T")[0];
+
+  canvas.addEventListener("mousedown",e=>{drawing=true;ctx.beginPath();ctx.moveTo(e.offsetX,e.offsetY)});
+  canvas.addEventListener("mousemove",e=>{if(drawing){ctx.lineTo(e.offsetX,e.offsetY);ctx.stroke()}});
+  canvas.addEventListener("mouseup",()=>drawing=false);
+  canvas.addEventListener("mouseout",()=>drawing=false);
+
+  canvas.addEventListener("touchstart",e=>{
+    e.preventDefault();
+    drawing=true;
+    const t=e.touches[0];
+    ctx.beginPath();
+    ctx.moveTo(t.clientX-canvas.offsetLeft,t.clientY-canvas.offsetTop);
+  });
+
+  canvas.addEventListener("touchmove",e=>{
+    e.preventDefault();
+    if(!drawing) return;
+    const t=e.touches[0];
+    ctx.lineTo(t.clientX-canvas.offsetLeft,t.clientY-canvas.offsetTop);
+    ctx.stroke();
+  });
+
+  canvas.addEventListener("touchend",()=>drawing=false);
+
+  amount.oninput=()=>{amountError.classList.toggle("hidden",amount.value<=2000);updateEMI();generateSummary()};
+  months.oninput=()=>{updateEMI();autoDates();generateSummary()};
+  loanDate.onchange=()=>{autoDates();generateSummary()};
+  repayEnd.onchange=generateSummary;
+  reason.onchange=()=>otherReasonDiv.classList.toggle("hidden",reason.value!=="Other");
+});
+</script>
+
+</body>
+</html>

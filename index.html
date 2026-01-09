@@ -1,0 +1,1793 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Avadhi Nidhi — Dashboard</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.08);
+      --border: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --soft: rgba(255,255,255,.04);
+      --good: #1db954;
+      --warn: #f5c542;
+      --bad: #ff5c5c;
+      --accent: #6ea8fe;
+    }
+
+    html, body { height: 100%; }
+    body{
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% 0%, rgba(110,168,254,.25), transparent 60%),
+        radial-gradient(900px 500px at 90% 10%, rgba(245,197,66,.18), transparent 55%),
+        radial-gradient(800px 500px at 70% 90%, rgba(29,185,84,.12), transparent 55%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .container-xl{ max-width: 1200px; }
+    .glass{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 16px 60px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+    }
+    .glass2{
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .brand{
+      display:flex; align-items:center; gap:14px;
+    }
+    .brand img{
+      width: 54px; height: 54px; border-radius: 50%;
+      object-fit: cover; border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+    }
+    .brand-title{
+      line-height: 1.1;
+    }
+    .brand-title h1{
+      margin:0; font-size: 1.35rem; font-weight: 800; letter-spacing: .2px;
+    }
+    .brand-title .sub{
+      margin-top: 4px; font-size: .9rem; color: var(--muted);
+    }
+
+    .topbar{
+      padding: 16px 18px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 12px;
+    }
+
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-size: .85rem;
+      white-space: nowrap;
+    }
+    .chip strong{ color: var(--text); font-weight: 600; }
+
+    .btn-soft{
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .btn-soft:hover{ background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.16); color: var(--text); }
+    .btn-primary{
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 600;
+    }
+
+    .kpi-grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+    }
+    .kpi{
+      grid-column: span 4;
+      padding: 14px 14px 12px;
+    }
+    @media (max-width: 992px){
+      .kpi{ grid-column: span 6; }
+    }
+    @media (max-width: 576px){
+      .kpi{ grid-column: span 12; }
+    }
+
+    .kpi .label{
+      color: var(--muted);
+      font-size: .86rem;
+      display:flex; justify-content:space-between; align-items:center;
+      gap: 10px;
+    }
+    .kpi .value{
+      margin-top: 8px;
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    .kpi .hint{
+      margin-top: 6px;
+      font-size: .85rem;
+      color: var(--muted);
+    }
+    .dot{
+      width: 8px; height: 8px; border-radius: 999px; display:inline-block;
+      background: rgba(255,255,255,.25);
+    }
+    .dot.good{ background: var(--good); }
+    .dot.warn{ background: var(--warn); }
+    .dot.bad{ background: var(--bad); }
+
+    .section{
+      padding: 14px;
+    }
+    .section h2{
+      margin: 0 0 10px 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    .muted{ color: var(--muted); }
+
+    .member-card{
+      padding: 14px;
+      min-height: 150px;
+    }
+
+    .badge-soft{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: .82rem;
+      font-weight: 600;
+      display:inline-flex; align-items:center; gap: 8px;
+    }
+    .badge-soft.good{ border-color: rgba(29,185,84,.35); background: rgba(29,185,84,.12); }
+    .badge-soft.warn{ border-color: rgba(245,197,66,.35); background: rgba(245,197,66,.12); }
+    .badge-soft.bad{ border-color: rgba(255,92,92,.35); background: rgba(255,92,92,.12); }
+
+    .table-wrap{
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+    }
+    table{
+      margin: 0;
+      font-size: .86rem;
+      color: var(--text);
+    }
+    thead th{
+      position: sticky; top: 0;
+      background: rgba(10,17,30,.95);
+      border-bottom: 1px solid var(--border) !important;
+      z-index: 3;
+    }
+    tbody td, tbody th{
+      border-top: 1px solid rgba(255,255,255,.06) !important;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .sticky-name{
+      position: sticky; left: 0;
+      background: rgba(10,17,30,.88);
+      z-index: 2;
+      border-right: 1px solid rgba(255,255,255,.08);
+    }
+    thead .sticky-name{ z-index: 4; }
+
+    .month-highlight{
+      background: rgba(110,168,254,.10) !important;
+      box-shadow: inset 0 0 0 9999px rgba(110,168,254,.08);
+    }
+
+    .warn-box{
+      border: 1px dashed rgba(245,197,66,.45);
+      background: rgba(245,197,66,.08);
+      color: rgba(255,255,255,.88);
+      border-radius: 14px;
+      padding: 12px 12px;
+    }
+
+    .admin-link{
+      font-size: .86rem;
+      color: rgba(255,255,255,.65);
+      text-decoration: none;
+      border-bottom: 1px dashed rgba(255,255,255,.25);
+    }
+    .admin-link:hover{ color: rgba(255,255,255,.9); border-bottom-color: rgba(255,255,255,.55); }
+
+    .modal-content{
+      background: rgba(10,17,30,.98);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.55);
+    }
+    .form-control, .form-select{
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--text);
+      border-radius: 12px;
+    }
+    .form-control:focus, .form-select:focus{
+      box-shadow: 0 0 0 .2rem rgba(110,168,254,.18);
+      border-color: rgba(110,168,254,.45);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+    }
+    .form-control::placeholder{ color: rgba(255,255,255,.45); }
+    .help{
+      font-size: .85rem; color: var(--muted);
+    }
+
+    .toast-wrap{
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 9999;
+      width: min(420px, calc(100% - 32px));
+    }
+
+    /* NEW: sort buttons */
+    .sortbar{
+      display:flex;
+      gap:8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .sortbar .btn-soft{ padding: 8px 10px; border-radius: 999px; }
+    .sortbar .label{ color: var(--muted); font-size: .86rem; margin-right: 4px; }
+
+    /* NEW: snapshot icon */
+    .snap-btn{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      user-select: none;
+    }
+    .snap-btn:hover{ background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.16); }
+
+    @media print{
+      #adminOpen, #btnReload, #btnToggleLoans, .sortbar, .snap-btn{ display:none !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container-xl py-3">
+
+    <!-- TOP BAR -->
+    <div class="glass topbar">
+      <div class="brand">
+        <img src="Images/an-Logo.png" alt="Avadhi Nidhi Logo" />
+        <div class="brand-title">
+          <h1>Avadhi Nidhi</h1>
+          <div class="sub">Loan & Payment Dashboard</div>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+        <!-- CHANGED: this is now CSV-based -->
+        <div class="chip" title="Derived from CSV content">
+          <span class="dot"></span>
+          <span>Last data update: <strong id="lastUpdated">—</strong></span>
+        </div>
+
+        <a class="btn btn-primary" href="LoanRequestForm.html">Request for a Loan</a>
+
+        <a href="#" class="admin-link ms-2" id="adminOpen">⚙ Admin</a>
+      </div>
+    </div>
+
+    <!-- KPI GRID -->
+    <div class="mt-3 glass section">
+      <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-2">
+        <div>
+          <h2 class="mb-1">Overview</h2>
+          <div class="muted">Month columns must be <strong>MMM-YY</strong> (example: <strong>Jan-26</strong>).</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-soft" id="btnReload">Reload CSV</button>
+          <span class="chip">
+            <span class="dot" id="monthDot"></span>
+            <span>Active month: <strong id="activeMonthLabel">—</strong></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="glass2 kpi">
+          <div class="label"><span>Total Members</span><span class="dot"></span></div>
+          <div class="value" id="kpiMembers">—</div>
+          <div class="hint">Count from payments.csv</div>
+        </div>
+
+        <div class="glass2 kpi">
+          <div class="label"><span>Expected This Month</span><span class="dot"></span></div>
+          <div class="value">AED <span id="kpiExpectedMonth">—</span></div>
+          <div class="hint">Members × 100</div>
+        </div>
+
+        <div class="glass2 kpi">
+          <div class="label"><span>Paid This Month</span><span class="dot good"></span></div>
+          <div class="value">AED <span id="kpiPaidMonth">—</span></div>
+          <div class="hint">Sum of active month column</div>
+        </div>
+
+        <div class="glass2 kpi">
+          <div class="label"><span>Outstanding This Month</span><span class="dot warn"></span></div>
+          <div class="value">AED <span id="kpiOutMonth">—</span></div>
+          <div class="hint">Expected − Paid</div>
+        </div>
+
+        <div class="glass2 kpi">
+          <div class="label"><span>Paid Till Date</span><span class="dot good"></span></div>
+          <div class="value">AED <span id="kpiPaidTill">—</span></div>
+          <div class="hint">Includes OB</div>
+        </div>
+
+        <div class="glass2 kpi">
+          <div class="label"><span>Outstanding Till Date</span><span class="dot bad"></span></div>
+          <div class="value">AED <span id="kpiOutTill">—</span></div>
+          <div class="hint">Expected till date − Paid till date</div>
+        </div>
+
+        <div class="glass2 kpi">
+          <div class="label"><span>Total Loan Outstanding</span><span class="dot warn"></span></div>
+          <div class="value">AED <span id="kpiLoanOutstanding">—</span></div>
+          <div class="hint">Sum of loan balances</div>
+        </div>
+
+        <div class="glass2 kpi">
+          <div class="label"><span>Fund Balance</span><span class="dot"></span></div>
+          <div class="value">AED <span id="kpiFundBalance">—</span></div>
+          <div class="hint">Paid − Loan Given + Loan Repaid</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBER QUICK VIEW -->
+    <div class="mt-3 glass section">
+      <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+        <div>
+          <h2 class="mb-1">Member Quick View</h2>
+          <div class="muted">Select a member to view expected, paid, outstanding, and loan status.</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+          <select class="form-select" id="memberSelect" style="min-width: 260px;">
+            <option value="">Select member…</option>
+          </select>
+
+          <!-- NEW: snapshot camera -->
+          <div class="snap-btn" id="btnSnapshot" title="Download snapshot" aria-label="Download snapshot" style="opacity:.45; pointer-events:none;">
+            📸
+          </div>
+        </div>
+      </div>
+
+      <!-- NEW: wrap member card for snapshot -->
+      <div class="mt-3 glass2 member-card" id="memberCardWrap">
+        <div class="muted" id="memberCard">Pick a member to see details.</div>
+      </div>
+    </div>
+
+    <!-- WARNINGS -->
+    <div class="mt-3" id="warningsArea" style="display:none;"></div>
+
+    <!-- PAYMENTS TABLE -->
+    <div class="mt-3 glass section">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <h2 class="mb-1">Payments</h2>
+          <div class="muted">Totals row is calculated. Current month column is highlighted.</div>
+        </div>
+
+        <!-- NEW: sort controls -->
+        <div class="sortbar">
+          <span class="label">Sort:</span>
+          <button class="btn btn-soft" id="paySortSN">SN ▲</button>
+          <button class="btn btn-soft" id="paySortName">Name</button>
+        </div>
+      </div>
+
+      <div class="mt-3 table-wrap">
+        <div style="max-height: 420px; overflow:auto;">
+          <table class="table table-dark table-hover align-middle" id="paymentsTable"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOANS TABLE -->
+    <div class="mt-3 glass section">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <h2 class="mb-1">Loans</h2>
+          <div class="muted">Collapsed by default. EMI is exact to 2 decimals.</div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+          <button class="btn btn-soft" id="btnToggleLoans">Show Loans</button>
+
+          <!-- NEW: sort controls -->
+          <div class="sortbar">
+            <span class="label">Sort:</span>
+            <button class="btn btn-soft" id="loanSortSN">SN ▲</button>
+            <button class="btn btn-soft" id="loanSortName">Name</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3 table-wrap" id="loansWrap" style="display:none;">
+        <div style="max-height: 420px; overflow:auto;">
+          <table class="table table-dark table-hover align-middle" id="loansTable"></table>
+        </div>
+      </div>
+    </div>
+
+    <div class="py-4 text-center muted">
+      Avadhi Nidhi • 2026: <strong>Ver 2</strong>.<strong>0</strong>
+    </div>
+  </div>
+
+  <!-- ADMIN LOGIN MODAL -->
+  <div class="modal fade" id="adminLoginModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">Admin Panel</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-0">
+          <div class="help mb-2">
+            Enter the admin password for the current minute.
+          </div>
+          <input id="adminPass" class="form-control" placeholder="Password" autocomplete="off" />
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-primary flex-fill" id="btnAdminLogin">Unlock</button>
+            <button class="btn btn-soft" data-bs-dismiss="modal">Cancel</button>
+          </div>
+          <div class="help mt-2">
+            Tip: password changes every minute.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL MODAL -->
+  <div class="modal fade" id="adminPanelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <div>
+            <h5 class="modal-title fw-bold mb-1">Admin Panel</h5>
+            <div class="help">Edit values, then download updated CSV files.</div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body pt-0">
+          <div class="warn-box mb-3">
+            <div class="fw-bold mb-1">How saving works</div>
+            <div class="help">
+              This page will <strong>download updated payments.csv and Loan.csv</strong>.
+              Then upload/commit them to GitHub using GitHub Desktop (your existing workflow).
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Member</label>
+              <select class="form-select" id="adminMember"></select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Entry Type</label>
+              <select class="form-select" id="adminType">
+                <option value="payment">Monthly Payment</option>
+                <option value="loanrepay">Loan Repayment (month column)</option>
+              </select>
+              <div class="help mt-1">Loan repayment updates the month amount inside Loan.csv for that member.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Month</label>
+              <select class="form-select" id="adminMonth"></select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Amount</label>
+              <input class="form-control" id="adminAmount" placeholder="e.g., 100 or 200" inputmode="decimal" />
+              <div class="help mt-1">Use numbers only. You can enter 200 if someone skipped and paid next month.</div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Note (optional)</label>
+              <input class="form-control" id="adminNote" placeholder="Optional note for yourself (not saved in CSV)" />
+            </div>
+          </div>
+
+          <div class="glass2 p-3 mt-3">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div>
+                <div class="fw-bold">Preview</div>
+                <div class="help" id="adminPreview">Select member/type/month and enter amount.</div>
+              </div>
+              <span class="badge-soft" id="unsavedBadge" style="display:none;">
+                <span class="dot warn"></span> Unsaved changes
+              </span>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap mt-3">
+              <button class="btn btn-soft" id="btnApplyChange">Apply Change</button>
+              <button class="btn btn-primary" id="btnDownloadCsv">Download Updated CSVs</button>
+              <button class="btn btn-soft" id="btnDiscardChanges">Discard Changes</button>
+            </div>
+          </div>
+
+          <div class="help mt-3">
+            Note: This admin gate is <strong>obfuscation</strong> (not bank-grade security). Don’t share the logic.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- NEW: html2canvas for snapshots (PC + mobile) -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <script>
+    /***********************
+     * CONFIG
+     ***********************/
+    const CSV_PAYMENTS = "payments.csv";
+    const CSV_LOANS = "Loan.csv";
+    const MONTHLY_CONTRIBUTION = 100;
+    const CURRENCY = "AED";
+
+    /***********************
+     * STATE
+     ***********************/
+    let paymentsRows = [];
+    let loanRows = [];
+
+    let paymentsMonthKeys = []; // sorted MMM-YY keys
+    let loansMonthKeys = [];    // sorted MMM-YY keys
+    let allMonthKeys = [];      // union sorted
+
+    let activeMonthKey = null;
+    let activeMonthDate = null;
+
+    let computed = {
+      members: 0,
+      expectedMonth: 0,
+      paidMonth: 0,
+      outMonth: 0,
+      expectedTill: 0,
+      paidTill: 0,
+      outTill: 0,
+      totalLoanProvided: 0,
+      totalLoanRepaid: 0,
+      totalLoanOutstanding: 0,
+      fundBalance: 0
+    };
+
+    let loansComputedRows = [];     // table-ready
+    let paymentsComputedRows = [];  // table-ready
+
+    let changes = { touched: false };
+
+    // NEW: cache-bust token so Chrome always fetches latest CSV.
+    // Updated every time loadAll() is called via "Reload CSV".
+    let cacheBuster = Date.now();
+
+    // NEW: sorting state (requested)
+    let paySort = { key: "SN", dir: 1 };   // dir: 1=asc, -1=desc
+    let loanSort = { key: "SN", dir: 1 };
+
+    /***********************
+     * SMALL UTILITIES
+     ***********************/
+    const $ = (id) => document.getElementById(id);
+
+    function toMoney(n, dp=2){
+      const x = Number(n);
+      if (!isFinite(x)) return "0.00";
+      return x.toFixed(dp);
+    }
+
+    function isMonthKey(k){
+      return /^[A-Za-z]{3}-\d{2}$/.test((k||"").trim());
+    }
+
+    function monthKeyToDate(k){
+      // k like "Jan-26"
+      const m = (k||"").trim().slice(0,3);
+      const yy = Number((k||"").trim().slice(4,6));
+      const map = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+      if (!(m in map) || !isFinite(yy)) return null;
+      const fullYear = 2000 + yy;
+      return new Date(fullYear, map[m], 1);
+    }
+
+    function sortMonthKeys(keys){
+      return [...new Set(keys.filter(isMonthKey))].sort((a,b) => {
+        const da = monthKeyToDate(a);
+        const db = monthKeyToDate(b);
+        return da - db;
+      });
+    }
+
+    function monthsBetween(fromDate, toDate){
+      // year-month based (ignores day). If same month => 0
+      const diff = (toDate.getFullYear() - fromDate.getFullYear()) * 12 + (toDate.getMonth() - fromDate.getMonth());
+      return Math.max(0, diff);
+    }
+// NEW: loan-specific helpers (grace-period aware)
+
+// Adds months while preserving day-of-month as much as possible
+function addMonthsSameDay(dateObj, monthsToAdd){
+  if (!(dateObj instanceof Date) || isNaN(dateObj)) return null;
+  const d = new Date(dateObj.getTime());
+  d.setMonth(d.getMonth() + monthsToAdd);
+  return d;
+}
+
+// Counts FULL completed months between two dates (day-accurate)
+// Example:
+// from 28-Nov-2025 to 09-Jan-2026 => 1 (only Nov→Dec completed)
+function completedMonthsBetween(fromDate, toDate){
+  if (!(fromDate instanceof Date) || isNaN(fromDate)) return 0;
+  if (!(toDate instanceof Date) || isNaN(toDate)) return 0;
+  if (toDate < fromDate) return 0;
+
+  let months =
+    (toDate.getFullYear() - fromDate.getFullYear()) * 12 +
+    (toDate.getMonth() - fromDate.getMonth());
+
+  // If day-of-month not yet reached, last month not completed
+  if (toDate.getDate() < fromDate.getDate()) {
+    months -= 1;
+  }
+
+  return Math.max(0, months);
+}
+
+
+    function parseDateDDMMYY(dateStr){
+      // "27-05-25" or "27-05-2025"
+      const s = (dateStr||"").trim();
+      if (!s) return null;
+      const parts = s.split("-").map(x => Number(x));
+      if (parts.length !== 3 || parts.some(x => !isFinite(x))) return null;
+      const [day, month, year] = parts;
+      const fullYear = year < 100 ? 2000 + year : year;
+      return new Date(fullYear, month - 1, day);
+    }
+
+    function safeNum(v){
+      const x = Number((v ?? "").toString().trim());
+      return isFinite(x) ? x : 0;
+    }
+
+    function showToast(title, msg, kind="info"){
+      const wrap = $("toastWrap");
+      const id = "t_" + Math.random().toString(16).slice(2);
+      const border = kind === "good" ? "rgba(29,185,84,.35)" :
+                    kind === "warn" ? "rgba(245,197,66,.40)" :
+                    kind === "bad"  ? "rgba(255,92,92,.40)" : "rgba(255,255,255,.18)";
+      const bg = kind === "good" ? "rgba(29,185,84,.10)" :
+                 kind === "warn" ? "rgba(245,197,66,.10)" :
+                 kind === "bad"  ? "rgba(255,92,92,.10)" : "rgba(255,255,255,.06)";
+
+      const el = document.createElement("div");
+      el.id = id;
+      el.className = "glass2 p-3 mb-2";
+      el.style.border = "1px solid " + border;
+      el.style.background = bg;
+      el.innerHTML = `
+        <div class="d-flex align-items-start justify-content-between gap-2">
+          <div>
+            <div class="fw-bold">${title}</div>
+            <div class="help">${msg}</div>
+          </div>
+          <button class="btn btn-soft btn-sm" aria-label="Close">✕</button>
+        </div>
+      `;
+      el.querySelector("button").onclick = () => el.remove();
+      wrap.appendChild(el);
+      setTimeout(() => { if (document.getElementById(id)) el.remove(); }, 5000);
+    }
+
+    /***********************
+     * CSV LOAD
+     ***********************/
+    function parseCSV(file){
+      // NEW: cache-busting query string to avoid Chrome stale cache
+      const sep = file.includes("?") ? "&" : "?";
+      const url = `${file}${sep}v=${cacheBuster}`;
+
+      return new Promise((resolve, reject) => {
+        Papa.parse(url, {
+          header: true,
+          download: true,
+          skipEmptyLines: "greedy",
+          complete: (res) => resolve(res.data || []),
+          error: (err) => reject(err)
+        });
+      });
+    }
+
+    async function loadAll(){
+      try{
+        $("warningsArea").style.display = "none";
+        $("warningsArea").innerHTML = "";
+
+        const [p, l] = await Promise.all([parseCSV(CSV_PAYMENTS), parseCSV(CSV_LOANS)]);
+        paymentsRows = normalizeRows(p).filter(r => (r.Name || r["Name"]) && String(r.Name || r["Name"]).trim() && (r.SN || r["SN"]));
+        loanRows = normalizeRows(l).filter(r => (r.Name || r["Name"]) && String(r.Name || r["Name"]).trim() && (r.SN || r["SN"]));
+
+        // Extract month columns
+        paymentsMonthKeys = sortMonthKeys(extractMonthKeys(paymentsRows));
+        loansMonthKeys = sortMonthKeys(extractMonthKeys(loanRows));
+        allMonthKeys = sortMonthKeys([...paymentsMonthKeys, ...loansMonthKeys]);
+
+        if (paymentsMonthKeys.length === 0){
+          warn(`payments.csv has no month columns like "Jan-26".`);
+        }
+        if (allMonthKeys.length === 0){
+          warn(`No month columns detected in either CSV. Please use headers like "Jan-26".`);
+        }
+
+        // Determine active month based on today and available columns
+        determineActiveMonth();
+
+        // Compute everything + render
+        computeAll();
+        renderAll();
+
+        // Populate member selectors
+        populateMemberSelects();
+
+        // NEW: CSV-based Last Updated label
+        updateLastDataUpdateLabel();
+
+        showToast("Loaded", "CSV files loaded and dashboard refreshed.", "good");
+      }catch(e){
+        console.error(e);
+        showToast("Error", "Failed to load CSV files. Check file names/paths and GitHub Pages hosting.", "bad");
+        warn(`Load error: ${String(e)}`);
+      }
+    }
+
+    function normalizeRows(rows){
+      // trims keys and values
+      return (rows || []).map((r) => {
+        const out = {};
+        Object.keys(r || {}).forEach((k) => {
+          const kk = (k || "").trim();
+          out[kk] = typeof r[k] === "string" ? r[k].trim() : r[k];
+        });
+        return out;
+      });
+    }
+
+    function extractMonthKeys(rows){
+      const keys = new Set();
+      for (const r of rows){
+        for (const k of Object.keys(r)){
+          if (isMonthKey(k)) keys.add(k.trim());
+        }
+      }
+      return [...keys];
+    }
+
+    function determineActiveMonth(){
+      const today = new Date();
+      // pick latest month <= today; if none, pick latest available
+      let candidate = null;
+      let candidateDate = null;
+
+      for (const k of allMonthKeys){
+        const d = monthKeyToDate(k);
+        if (!d) continue;
+        if (d <= new Date(today.getFullYear(), today.getMonth(), 1)){
+          candidate = k;
+          candidateDate = d;
+        }
+      }
+      if (!candidate && allMonthKeys.length){
+        candidate = allMonthKeys[allMonthKeys.length - 1];
+        candidateDate = monthKeyToDate(candidate);
+      }
+
+      activeMonthKey = candidate;
+      activeMonthDate = candidateDate;
+
+      $("activeMonthLabel").textContent = activeMonthKey || "—";
+      const dot = $("monthDot");
+      dot.className = "dot";
+      if (!activeMonthKey) dot.classList.add("bad");
+      else dot.classList.add("good");
+    }
+
+    function warn(msg){
+      const area = $("warningsArea");
+      area.style.display = "block";
+      const box = document.createElement("div");
+      box.className = "warn-box mb-2";
+      box.innerHTML = `<div class="fw-bold mb-1">Warning</div><div class="help">${msg}</div>`;
+      area.appendChild(box);
+    }
+
+    // NEW: CSV-based last update (find latest month column that has any non-zero value)
+    function updateLastDataUpdateLabel(){
+      const monthKeys = allMonthKeys;
+      if (!monthKeys.length){
+        $("lastUpdated").textContent = "—";
+        return;
+      }
+
+      const hasValueInMonth = (rows, key) => {
+        for (const r of rows){
+          const v = safeNum(r[key]);
+          if (v !== 0) return true;
+        }
+        return false;
+      };
+
+      let latest = null;
+      for (const k of monthKeys){
+        if (hasValueInMonth(paymentsRows, k) || hasValueInMonth(loanRows, k)){
+          latest = k;
+        }
+      }
+
+      $("lastUpdated").textContent = latest ? latest : "—";
+    }
+
+    /***********************
+     * COMPUTATIONS
+     ***********************/
+    function computeAll(){
+
+      const members = paymentsRows.length;
+let paidTill = 0;
+let outTill = 0;
+
+	// FUND-LEVEL expected till date (correct logic)
+const firstMonthKey = paymentsMonthKeys[0] || null;
+
+const totalMonthsTill =
+  firstMonthKey && activeMonthKey
+    ? countMonthsTill(activeMonthKey, paymentsMonthKeys)
+    : 0;
+
+// Business rule:
+// Expected = (Members × Months × 100) + (Members × OB 400)
+let expectedTill =
+  (members * totalMonthsTill * MONTHLY_CONTRIBUTION) +
+  (members * 400);
+
+      // Expected this month
+      const expectedMonth = members * MONTHLY_CONTRIBUTION;
+
+      // Paid this month
+      let paidMonth = 0;
+      for (const r of paymentsRows){
+        paidMonth += safeNum(r[activeMonthKey]);
+      }
+      const outMonth = expectedMonth - paidMonth;
+
+      
+      // Also detect mismatches in CSV Total Paid (informational)
+      const mismatches = [];
+
+      // Prepare payments computed rows
+      paymentsComputedRows = paymentsRows.map((r) => {
+        const name = r.Name;
+        const ob = safeNum(r.OB);
+        const paidMonthsSumTill = sumMonths(r, paymentsMonthKeys, activeMonthKey);
+        const paidMonthsSumAll = sumMonths(r, paymentsMonthKeys, null); // sum all payment month columns
+        const calcTotalPaid = ob + paidMonthsSumAll;
+
+        const paidTillMember = ob + paidMonthsSumTill;        
+        paidTill += paidTillMember;
+
+
+
+        // Compare CSV Total Paid vs computed (optional check)
+        const csvTotalPaid = safeNum(r["Total Paid"]);
+        if (isFinite(csvTotalPaid) && Math.abs(csvTotalPaid - calcTotalPaid) > 0.01){
+          mismatches.push({ Name: name, csv: csvTotalPaid, calc: calcTotalPaid });
+        }
+
+
+        return { ...r, "__calcTotalPaid": calcTotalPaid };
+      });
+outTill = expectedTill - paidTill;
+      // Loans computed
+      const loansAgg = computeLoans();
+
+      // Fund balance
+      const fundBalance = paidTill - loansAgg.totalLoanProvided + loansAgg.totalLoanRepaid;
+
+      computed = {
+        members,
+        expectedMonth,
+        paidMonth,
+        outMonth,
+        expectedTill,
+        paidTill,
+        outTill,
+        totalLoanProvided: loansAgg.totalLoanProvided,
+        totalLoanRepaid: loansAgg.totalLoanRepaid,
+        totalLoanOutstanding: loansAgg.totalLoanOutstanding,
+        fundBalance
+      };
+
+      // Warnings for mismatches
+      if (mismatches.length){
+        warn(`Some members have "Total Paid" in payments.csv that does not match calculated total (OB + sum of all month columns). This is fine, but you may want to correct it. Example: ${mismatches[0].Name} (CSV ${mismatches[0].csv}, Calc ${mismatches[0].calc.toFixed(2)}).`);
+      }
+    }
+
+    function countMonthsTill(activeKey, monthKeys){
+      if (!activeKey) return 0;
+      const ad = monthKeyToDate(activeKey);
+      if (!ad) return 0;
+      return monthKeys.filter(k => {
+        const d = monthKeyToDate(k);
+        return d && d <= ad;
+      }).length;
+    }
+
+    function sumMonths(row, monthKeys, upToKey=null){
+      let limitDate = null;
+      if (upToKey){
+        limitDate = monthKeyToDate(upToKey);
+      }
+      let sum = 0;
+      for (const k of monthKeys){
+        const d = monthKeyToDate(k);
+        if (limitDate && d && d > limitDate) continue;
+        sum += safeNum(row[k]);
+      }
+      return sum;
+    }
+
+    function computeLoans(){
+      loansComputedRows = [];
+
+      let totalLoanProvided = 0;
+      let totalLoanRepaid = 0;
+      let totalLoanOutstanding = 0;
+
+      for (const r of loanRows){
+        const name = r.Name;
+        const loanAmt = safeNum(r["LOAN AMOUNT"]);
+        const months = safeNum(r["AGREED TO REPAY IN (MONTHS)"]);
+        const hasLoan = loanAmt > 0 && months > 0;
+
+        const loanDate = parseDateDDMMYY(r["LOAN ISSUE DATE"]);
+        const repaid = sumMonths(r, loansMonthKeys, null); // sum all month columns in Loan.csv
+        const balance = hasLoan ? (loanAmt - repaid) : 0;
+
+        let emi = hasLoan ? (loanAmt / months) : 0;
+        emi = Number(emi.toFixed(2));
+
+        let monthsPassed = 0;
+let expectedTill = 0;
+
+if (hasLoan && loanDate){
+  // 2-month grace period
+  const graceEndDate = addMonthsSameDay(loanDate, 2);
+
+  // Use real "today", not month-only logic
+  const today = new Date();
+
+  // Count FULL completed EMI months after grace
+  monthsPassed = completedMonthsBetween(graceEndDate, today);
+
+  // Expected till date = EMI × monthsPassed, capped to loan amount
+  expectedTill = Math.min(
+    Number((monthsPassed * emi).toFixed(2)),
+    loanAmt
+  );
+}
+
+const overdueAmt = hasLoan
+  ? Math.max(0, Number((expectedTill - repaid).toFixed(2)))
+  : 0;
+
+
+        let status = "No Loan";
+let badge = "badge-soft";
+
+if (hasLoan){
+  const graceEndDate = loanDate ? addMonthsSameDay(loanDate, 2) : null;
+  const today = new Date();
+
+  if (repaid >= loanAmt - 0.009){
+    status = "Cleared";
+    badge = "badge-soft good";
+  }
+  else if (graceEndDate && today < graceEndDate){
+    status = "Not Yet Due";
+    badge = "badge-soft";
+  }
+  else if (repaid >= expectedTill - 0.009){
+    status = "On Time";
+    badge = "badge-soft good";
+  }
+  else{
+    status = "Overdue";
+    badge = "badge-soft bad";
+  }
+}
+
+
+        if (hasLoan){
+          totalLoanProvided += loanAmt;
+          totalLoanRepaid += repaid;
+          totalLoanOutstanding += Math.max(0, balance);
+        }
+
+        loansComputedRows.push({
+          SN: r.SN,
+          Name: name,
+          "Loan Date": hasLoan ? (r["LOAN ISSUE DATE"] || "") : "",
+          "Loan Amount": hasLoan ? Number(loanAmt.toFixed(2)) : "",
+          "Months": hasLoan ? months : "",
+          "EMI": hasLoan ? Number(emi.toFixed(2)) : "",
+          "Repaid": hasLoan ? Number(repaid.toFixed(2)) : "",
+		"Expected Till Date": hasLoan ? Number(expectedTill.toFixed(2)) : "",
+		"Overdue Amount": hasLoan ? Number(overdueAmt.toFixed(2)) : "",
+		"Balance": hasLoan ? Number(balance.toFixed(2)) : "",
+          "Status": `<span class="${badge}"><span class="dot ${badge.includes("good")?"good":badge.includes("bad")?"bad":"warn"}"></span>${status}</span>`,
+          "__rawStatus": status,
+          "__row": r
+        });
+      }
+
+      // NOTE: keep original severity sort as baseline,
+      // but sorting UI will override render order without changing calculations.
+      const severity = (s) => s === "Overdue" ? 0 : s === "On Time" ? 1 : s === "Not Yet Due" ? 2 : s === "Cleared" ? 3 : 4;
+      loansComputedRows.sort((a,b) => {
+        const sa = severity(a.__rawStatus), sb = severity(b.__rawStatus);
+        if (sa !== sb) return sa - sb;
+        return String(a.Name).localeCompare(String(b.Name));
+      });
+
+      return { totalLoanProvided, totalLoanRepaid, totalLoanOutstanding };
+    }
+
+    /***********************
+     * RENDER
+     ***********************/
+    function renderAll(){
+      // KPIs
+      $("kpiMembers").textContent = computed.members;
+      $("kpiExpectedMonth").textContent = toMoney(computed.expectedMonth, 0);
+      $("kpiPaidMonth").textContent = toMoney(computed.paidMonth, 0);
+      $("kpiOutMonth").textContent = toMoney(computed.outMonth, 0);
+
+      $("kpiPaidTill").textContent = toMoney(computed.paidTill, 2);
+      $("kpiOutTill").textContent = toMoney(computed.outTill, 2);
+
+      $("kpiLoanOutstanding").textContent = toMoney(computed.totalLoanOutstanding, 2);
+      $("kpiFundBalance").textContent = toMoney(computed.fundBalance, 2);
+
+      // Set month dot color based on month outstanding
+      const mdot = $("monthDot");
+      mdot.className = "dot";
+      if (!activeMonthKey) mdot.classList.add("bad");
+      else if (computed.outMonth <= 0) mdot.classList.add("good");
+      else if (computed.outMonth < computed.expectedMonth * 0.2) mdot.classList.add("warn");
+      else mdot.classList.add("bad");
+
+      // Payments table
+      renderPaymentsTable();
+
+      // Loans table
+      renderLoansTable();
+    }
+
+    // NEW: generic compare helpers for sorting
+    function cmpSN(a, b){
+      const na = Number(a.SN), nb = Number(b.SN);
+      const va = isFinite(na) ? na : 0;
+      const vb = isFinite(nb) ? nb : 0;
+      return va - vb;
+    }
+    function cmpName(a, b){
+      return String(a.Name || "").localeCompare(String(b.Name || ""), undefined, { sensitivity: "base" });
+    }
+
+    function renderPaymentsTable(){
+      const table = $("paymentsTable");
+      table.innerHTML = "";
+
+      if (!paymentsRows.length){
+        table.innerHTML = `<tbody><tr><td class="p-3 muted">No payments data found.</td></tr></tbody>`;
+        return;
+      }
+
+      // Build headers
+      const baseCols = ["SN", "Name", "OB", "Total Paid"];
+      const monthCols = paymentsMonthKeys;
+      const headers = [...baseCols, ...monthCols];
+
+      const thead = document.createElement("thead");
+      const trh = document.createElement("tr");
+      for (const h of headers){
+        const th = document.createElement("th");
+        th.textContent = h;
+        if (h === "Name") th.classList.add("sticky-name");
+        if (h === activeMonthKey) th.classList.add("month-highlight");
+        trh.appendChild(th);
+      }
+      thead.appendChild(trh);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      // Totals
+      const totals = {};
+      for (const h of headers) totals[h] = 0;
+
+      // rows (NEW: sorting)
+      const rows = [...paymentsRows];
+      rows.sort((a,b) => {
+        const primary = paySort.key === "SN" ? cmpSN(a,b) : cmpName(a,b);
+        if (primary !== 0) return primary * paySort.dir;
+        // tie-breaker
+        const secondary = paySort.key === "SN" ? cmpName(a,b) : cmpSN(a,b);
+        return secondary;
+      });
+
+      for (const r of rows){
+        const tr = document.createElement("tr");
+
+        for (const h of headers){
+          const td = document.createElement(h === "Name" ? "th" : "td");
+          if (h === "Name") td.classList.add("sticky-name");
+
+          let val = r[h];
+
+          // Show computed Total Paid (we still show CSV value, but computed is used for admin/export)
+          if (h === "Total Paid"){
+            const found = paymentsComputedRows.find(x => x.Name === r.Name);
+            const calc = found ? found.__calcTotalPaid : safeNum(r["Total Paid"]);
+            val = calc.toFixed(2);
+            totals[h] += calc;
+          } else if (h === "OB"){
+            const ob = safeNum(r.OB);
+            val = ob.toFixed(2);
+            totals[h] += ob;
+          } else if (isMonthKey(h)){
+            const x = safeNum(r[h]);
+            val = x ? x.toFixed(0) : "";
+            totals[h] += x;
+          } else if (h === "SN"){
+            val = r.SN || "";
+          } else if (h === "Name"){
+            val = r.Name || "";
+          }
+
+          td.textContent = val ?? "";
+          if (h === activeMonthKey) td.classList.add("month-highlight");
+          tr.appendChild(td);
+        }
+
+        tbody.appendChild(tr);
+      }
+
+      // totals row
+      const tfoot = document.createElement("tfoot");
+      const trf = document.createElement("tr");
+      for (const h of headers){
+        const td = document.createElement(h === "Name" ? "th" : "td");
+        if (h === "Name") {
+          td.classList.add("sticky-name");
+          td.textContent = "TOTAL";
+        } else if (h === "SN"){
+          td.textContent = "";
+        } else if (h === "Total Paid" || h === "OB"){
+          td.textContent = totals[h].toFixed(2);
+        } else if (isMonthKey(h)){
+          td.textContent = totals[h] ? totals[h].toFixed(0) : "";
+        } else {
+          td.textContent = "";
+        }
+        if (h === activeMonthKey) td.classList.add("month-highlight");
+        trf.appendChild(td);
+      }
+      tfoot.appendChild(trf);
+
+      table.appendChild(tbody);
+      table.appendChild(tfoot);
+    }
+
+    function renderLoansTable(){
+      const table = $("loansTable");
+      table.innerHTML = "";
+
+      if (!loanRows.length){
+        table.innerHTML = `<tbody><tr><td class="p-3 muted">No loan data found.</td></tr></tbody>`;
+        return;
+      }
+
+      const headers = ["SN","Name","Loan Date","Loan Amount","Months","EMI","Repaid","Expected Till Date","Overdue Amount","Balance","Status"];
+
+      const thead = document.createElement("thead");
+      const trh = document.createElement("tr");
+      for (const h of headers){
+        const th = document.createElement("th");
+        th.textContent = h;
+        if (h === "Name") th.classList.add("sticky-name");
+        trh.appendChild(th);
+      }
+      thead.appendChild(trh);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      // NEW: sorting without changing loan calculations
+      const rows = [...loansComputedRows];
+      rows.sort((a,b) => {
+        const primary = loanSort.key === "SN" ? cmpSN(a,b) : cmpName(a,b);
+        if (primary !== 0) return primary * loanSort.dir;
+        const secondary = loanSort.key === "SN" ? cmpName(a,b) : cmpSN(a,b);
+        return secondary;
+      });
+
+      for (const r of rows){
+        const tr = document.createElement("tr");
+        for (const h of headers){
+          const td = document.createElement(h === "Name" ? "th" : "td");
+          if (h === "Name") td.classList.add("sticky-name");
+
+          let v = r[h];
+          if (h === "Status"){
+            td.innerHTML = v;
+          } else if (["Loan Amount","EMI","Repaid","Expected Till Date","Overdue Amount","Balance"].includes(h) && v !== ""){
+            td.textContent = Number(v).toFixed(h==="EMI"?2:2);
+          } else {
+            td.textContent = v ?? "";
+          }
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+
+      table.appendChild(tbody);
+    }
+
+    /***********************
+     * MEMBER QUICK VIEW
+     ***********************/
+    function populateMemberSelects(){
+      const select = $("memberSelect");
+      select.innerHTML = `<option value="">Select member…</option>`;
+      const adminMember = $("adminMember");
+      adminMember.innerHTML = "";
+
+      const names = [...paymentsRows.map(r => r.Name)].sort((a,b)=>String(a).localeCompare(String(b)));
+      for (const n of names){
+        const opt = document.createElement("option");
+        opt.value = n;
+        opt.textContent = n;
+        select.appendChild(opt);
+
+        const opt2 = document.createElement("option");
+        opt2.value = n;
+        opt2.textContent = n;
+        adminMember.appendChild(opt2);
+      }
+
+      // Months in admin: union
+      const adminMonth = $("adminMonth");
+      adminMonth.innerHTML = "";
+      for (const k of allMonthKeys){
+        const opt = document.createElement("option");
+        opt.value = k;
+        opt.textContent = k + (k === activeMonthKey ? " (active)" : "");
+        adminMonth.appendChild(opt);
+      }
+      if (activeMonthKey) adminMonth.value = activeMonthKey;
+
+      select.onchange = () => renderMemberCard(select.value);
+      renderMemberCard(select.value);
+    }
+
+    function renderMemberCard(name){
+      const card = $("memberCard");
+      const snap = $("btnSnapshot");
+
+      if (!name){
+        card.innerHTML = `<div class="muted">Pick a member to see details.</div>`;
+        snap.style.opacity = ".45";
+        snap.style.pointerEvents = "none";
+        snap.dataset.member = "";
+        return;
+      }
+
+      const p = paymentsRows.find(r => r.Name === name);
+      const pCalc = paymentsComputedRows.find(r => r.Name === name);
+      const l = loansComputedRows.find(r => r.Name === name);
+
+      const ob = p ? safeNum(p.OB) : 0;
+      const monthsTillCount = countMonthsTill(activeMonthKey, paymentsMonthKeys);
+      const expectedTill = (monthsTillCount * MONTHLY_CONTRIBUTION) + ob;
+
+      const paidTillMonths = p ? sumMonths(p, paymentsMonthKeys, activeMonthKey) : 0;
+      const paidTill = ob + paidTillMonths;
+      const outstanding = expectedTill - paidTill;
+
+      const currentMonthPaid = p ? safeNum(p[activeMonthKey]) : 0;
+
+      // Loan summary
+      const hasLoan = l && l["Loan Amount"] !== "";
+      const loanAmt = hasLoan ? safeNum(l["Loan Amount"]) : 0;
+      const loanRepaid = hasLoan ? safeNum(l["Repaid"]) : 0;
+      const loanBalance = hasLoan ? safeNum(l["Balance"]) : 0;
+
+      let loanBadge = `<span class="badge-soft"><span class="dot"></span>No Loan</span>`;
+      if (hasLoan){
+        const s = l.__rawStatus || "Active";
+        if (s === "On Time" || s === "Cleared") loanBadge = `<span class="badge-soft good"><span class="dot good"></span>${s}</span>`;
+        else if (s === "Not Yet Due") loanBadge = `<span class="badge-soft"><span class="dot warn"></span>${s}</span>`;
+        else loanBadge = `<span class="badge-soft bad"><span class="dot bad"></span>${s}</span>`;
+      }
+
+      const totalPaidCalc = pCalc ? pCalc.__calcTotalPaid : (p ? safeNum(p["Total Paid"]) : 0);
+
+      const outClass = outstanding <= 0 ? "good" : outstanding < MONTHLY_CONTRIBUTION ? "warn" : "bad";
+      const outBadge = `<span class="badge-soft ${outClass}"><span class="dot ${outClass}"></span>Outstanding: ${CURRENCY} ${toMoney(outstanding,2)}</span>`;
+
+      card.innerHTML = `
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+          <div>
+            <div class="fw-bold" style="font-size:1.05rem;">${name}</div>
+            <div class="help">Active month: <strong>${activeMonthKey || "—"}</strong> • Current month paid: <strong>${CURRENCY} ${toMoney(currentMonthPaid,0)}</strong></div>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            ${outBadge}
+            ${loanBadge}
+          </div>
+        </div>
+
+        <div class="row g-2 mt-3">
+          <div class="col-md-4">
+            <div class="glass2 p-3">
+              <div class="muted">Expected till date (incl. OB)</div>
+              <div class="fw-bold mt-1">${CURRENCY} ${toMoney(expectedTill,2)}</div>
+              <div class="help">OB: ${CURRENCY} ${toMoney(ob,2)}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="glass2 p-3">
+              <div class="muted">Paid till date (incl. OB)</div>
+              <div class="fw-bold mt-1">${CURRENCY} ${toMoney(paidTill,2)}</div>
+              <div class="help">Calculated total paid (all months): ${CURRENCY} ${toMoney(totalPaidCalc,2)}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="glass2 p-3">
+              <div class="muted">Loan summary</div>
+              <div class="fw-bold mt-1">${hasLoan ? `${CURRENCY} ${toMoney(loanBalance,2)} balance` : "—"}</div>
+              <div class="help">${hasLoan ? `Loan: ${CURRENCY} ${toMoney(loanAmt,2)} • Repaid: ${CURRENCY} ${toMoney(loanRepaid,2)}` : "No active loan record"}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // NEW: enable snapshot button for selected member
+      snap.style.opacity = "1";
+      snap.style.pointerEvents = "auto";
+      snap.dataset.member = name;
+    }
+
+    // NEW: snapshot feature (PC + mobile)
+    function sanitizeFilePart(s){
+      return String(s || "")
+        .trim()
+        .replace(/\s+/g, "_")
+        .replace(/[\/\\:*?"<>|]/g, "")   // illegal filename chars
+        .slice(0, 80);
+    }
+
+    function pad2(n){ return String(n).padStart(2, "0"); }
+
+    async function takeMemberSnapshot(){
+      const name = $("btnSnapshot").dataset.member;
+      if (!name){
+        showToast("Snapshot", "Select a member first.", "warn");
+        return;
+      }
+      const target = $("memberCardWrap");
+
+      try{
+        const canvas = await html2canvas(target, {
+          backgroundColor: null,
+          scale: Math.min(2, window.devicePixelRatio || 1)
+        });
+
+        const d = new Date();
+        // REQUIRED FORMAT: AvadhiNidhi_<MemberName>_<HH-MM-DD-MM-YY>.png
+        const stamp = `${pad2(d.getHours())}-${pad2(d.getMinutes())}-${pad2(d.getDate())}-${pad2(d.getMonth()+1)}-${String(d.getFullYear()).slice(-2)}`;
+        const filename = `AvadhiNidhi_${sanitizeFilePart(name)}_${stamp}.png`;
+
+        const link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        showToast("Snapshot saved", filename, "good");
+      }catch(err){
+        console.error(err);
+        showToast("Snapshot failed", "Could not generate snapshot on this device/browser.", "bad");
+      }
+    }
+
+    /***********************
+     * ADMIN (OBFUSCATED PASSWORD GATE)
+     ***********************/
+    function obfMinutePass(){
+      // Password target: DDMMYYHHMM (local time), but obfuscated
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2,"0");
+
+      const dd = pad(d.getDate());
+      const mm = pad(d.getMonth()+1);
+      const yy = String(d.getFullYear()).slice(-2);
+      const hh = pad(d.getHours());
+      const mi = pad(d.getMinutes());
+
+      const junk = ["x","7","k","Q","0","m","9","z"];
+      const spin = (s) => s.split("").reverse().join("");
+      const t1 = dd + mm;
+      const t2 = yy + hh;
+      const t3 = mi;
+
+      const a = spin(t2);
+      const b = spin(t1);
+      const c = t3;
+      const noise = junk[(d.getSeconds() % junk.length)];
+
+      const ddmm = spin(b);
+      const yyhh = spin(a);
+      const out = (ddmm + yyhh + c).replace(noise, "");
+
+      return out; // DDMMYYHHMM
+    }
+
+    function verifyAdmin(pass){
+      const p = (pass||"").trim();
+      const real = obfMinutePass();
+      const mix = (s) => (s.split("").map((ch,i)=> String.fromCharCode(ch.charCodeAt(0) ^ (i%3))).join(""));
+      return mix(p) === mix(real);
+    }
+
+    /***********************
+     * ADMIN EDITING + CSV DOWNLOAD
+     ***********************/
+    function setUnsaved(on){
+      changes.touched = !!on;
+      $("unsavedBadge").style.display = changes.touched ? "inline-flex" : "none";
+    }
+
+    function getMemberRowPayments(name){
+      return paymentsRows.find(r => r.Name === name);
+    }
+
+    function getMemberRowLoans(name){
+      return loanRows.find(r => r.Name === name);
+    }
+
+    function ensureMonthColumn(rows, key){
+      if (!isMonthKey(key)) return;
+      for (const r of rows){
+        if (!(key in r)) r[key] = "";
+      }
+    }
+
+    function applyAdminChange(){
+      const name = $("adminMember").value;
+      const type = $("adminType").value;
+      const mkey = $("adminMonth").value;
+      const amtRaw = $("adminAmount").value;
+      const amt = Number(String(amtRaw).replace(/,/g,"").trim());
+
+      if (!name){
+        showToast("Admin", "Please select a member.", "warn");
+        return;
+      }
+      if (!isMonthKey(mkey)){
+        showToast("Admin", "Invalid month key. Use format like Jan-26.", "bad");
+        return;
+      }
+      if (!isFinite(amt) || amt < 0){
+        showToast("Admin", "Enter a valid amount (0 or more).", "warn");
+        return;
+      }
+
+      if (type === "payment"){
+        let row = getMemberRowPayments(name);
+        if (!row){
+          showToast("Admin", "Member not found in payments.csv.", "bad");
+          return;
+        }
+
+        ensureMonthColumn(paymentsRows, mkey);
+        if (!paymentsMonthKeys.includes(mkey)) {
+          paymentsMonthKeys = sortMonthKeys([...paymentsMonthKeys, mkey]);
+          allMonthKeys = sortMonthKeys([...allMonthKeys, mkey]);
+        }
+
+        row[mkey] = amt ? String(amt) : "";
+
+        // keep Total Paid consistent
+        const ob = safeNum(row.OB);
+        const totalMonths = sumMonths(row, paymentsMonthKeys, null);
+        row["Total Paid"] = (ob + totalMonths).toFixed(2);
+
+        setUnsaved(true);
+        showToast("Applied", `${name} • Payment • ${mkey} = ${amt}`, "good");
+      }
+
+      if (type === "loanrepay"){
+        let row = getMemberRowLoans(name);
+        if (!row){
+          const nextSN = computeNextSN(loanRows);
+          row = {
+            SN: String(nextSN),
+            Name: name,
+            "LOAN ISSUE DATE": "",
+            "LOAN AMOUNT": "",
+            "AGREED TO REPAY IN (MONTHS)": ""
+          };
+          loanRows.push(row);
+        }
+
+        ensureMonthColumn(loanRows, mkey);
+        if (!loansMonthKeys.includes(mkey)){
+          loansMonthKeys = sortMonthKeys([...loansMonthKeys, mkey]);
+          allMonthKeys = sortMonthKeys([...allMonthKeys, mkey]);
+        }
+
+        row[mkey] = amt ? String(amt) : "";
+
+        setUnsaved(true);
+        showToast("Applied", `${name} • Loan repayment • ${mkey} = ${amt}`, "good");
+      }
+
+      determineActiveMonth();
+      computeAll();
+      renderAll();
+      populateMemberSelects();
+      updateLastDataUpdateLabel();
+
+      updateAdminPreview();
+    }
+
+    function computeNextSN(rows){
+      let max = 0;
+      for (const r of rows){
+        const n = Number(r.SN);
+        if (isFinite(n)) max = Math.max(max, n);
+      }
+      return max + 1;
+    }
+
+    function discardAdminChanges(){
+      setUnsaved(false);
+      $("adminAmount").value = "";
+      $("adminNote").value = "";
+      showToast("Discarded", "Changes discarded by reloading CSV files.", "warn");
+      // NEW: also refresh cacheBuster to force fetch latest
+      cacheBuster = Date.now();
+      loadAll();
+    }
+
+    function downloadCSVs(){
+      if (!changes.touched){
+        showToast("Nothing to save", "No changes detected. Apply a change first.", "warn");
+        return;
+      }
+
+      for (const k of paymentsMonthKeys) ensureMonthColumn(paymentsRows, k);
+      for (const k of loansMonthKeys) ensureMonthColumn(loanRows, k);
+
+      const paymentsBase = ["SN","Name","Total Paid","OB"];
+      const paymentsHeaders = [...paymentsBase, ...paymentsMonthKeys];
+      const paymentsOut = paymentsRows
+        .slice()
+        .sort((a,b) => String(a.Name).localeCompare(String(b.Name)))
+        .map(r => pickColumns(r, paymentsHeaders));
+
+      const loansBase = ["SN","Name","LOAN ISSUE DATE","LOAN AMOUNT","AGREED TO REPAY IN (MONTHS)"];
+      const loansHeaders = [...loansBase, ...loansMonthKeys];
+      const loansOut = loanRows
+        .slice()
+        .sort((a,b) => String(a.Name).localeCompare(String(b.Name)))
+        .map(r => pickColumns(r, loansHeaders));
+
+      const paymentsCsv = Papa.unparse(paymentsOut, { columns: paymentsHeaders });
+      const loansCsv = Papa.unparse(loansOut, { columns: loansHeaders });
+
+      downloadTextFile(paymentsCsv, "payments.csv");
+      downloadTextFile(loansCsv, "Loan.csv");
+
+      setUnsaved(false);
+      showToast("Downloaded", "Updated payments.csv and Loan.csv downloaded. Commit them via GitHub Desktop.", "good");
+    }
+
+    function pickColumns(row, headers){
+      const out = {};
+      for (const h of headers){
+        out[h] = (row[h] ?? "");
+      }
+      return out;
+    }
+
+    function downloadTextFile(text, filename){
+      const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function updateAdminPreview(){
+      const name = $("adminMember").value;
+      const type = $("adminType").value;
+      const mkey = $("adminMonth").value;
+      const amt = $("adminAmount").value;
+
+      const typeLabel = type === "payment" ? "Monthly Payment" : "Loan Repayment";
+      const note = $("adminNote").value ? ` • Note: ${$("adminNote").value}` : "";
+
+      $("adminPreview").textContent =
+        (name && mkey)
+          ? `${name} • ${typeLabel} • ${mkey} = ${amt || "—"}${note}`
+          : "Select member/type/month and enter amount.";
+    }
+
+    /***********************
+     * EVENTS
+     ***********************/
+    document.addEventListener("DOMContentLoaded", () => {
+      // Reload CSV: NEW cache-buster to force newest data (Chrome cache fix)
+      $("btnReload").onclick = () => { cacheBuster = Date.now(); loadAll(); };
+
+      $("btnToggleLoans").onclick = () => {
+        const wrap = $("loansWrap");
+        const isOpen = wrap.style.display !== "none";
+        wrap.style.display = isOpen ? "none" : "block";
+        $("btnToggleLoans").textContent = isOpen ? "Show Loans" : "Hide Loans";
+      };
+
+      // NEW: snapshot button
+      $("btnSnapshot").onclick = takeMemberSnapshot;
+
+      // NEW: sorting buttons
+      const updateSortButtons = () => {
+        // Payments
+        $("paySortSN").textContent = `SN ${paySort.key==="SN" ? (paySort.dir===1 ? "▲" : "▼") : ""}`.trim();
+        $("paySortName").textContent = `Name ${paySort.key==="Name" ? (paySort.dir===1 ? "▲" : "▼") : ""}`.trim();
+        // Loans
+        $("loanSortSN").textContent = `SN ${loanSort.key==="SN" ? (loanSort.dir===1 ? "▲" : "▼") : ""}`.trim();
+        $("loanSortName").textContent = `Name ${loanSort.key==="Name" ? (loanSort.dir===1 ? "▲" : "▼") : ""}`.trim();
+      };
+
+      $("paySortSN").onclick = () => {
+        if (paySort.key === "SN") paySort.dir *= -1;
+        else { paySort.key = "SN"; paySort.dir = 1; }
+        renderPaymentsTable();
+        updateSortButtons();
+      };
+      $("paySortName").onclick = () => {
+        if (paySort.key === "Name") paySort.dir *= -1;
+        else { paySort.key = "Name"; paySort.dir = 1; }
+        renderPaymentsTable();
+        updateSortButtons();
+      };
+
+      $("loanSortSN").onclick = () => {
+        if (loanSort.key === "SN") loanSort.dir *= -1;
+        else { loanSort.key = "SN"; loanSort.dir = 1; }
+        renderLoansTable();
+        updateSortButtons();
+      };
+      $("loanSortName").onclick = () => {
+        if (loanSort.key === "Name") loanSort.dir *= -1;
+        else { loanSort.key = "Name"; loanSort.dir = 1; }
+        renderLoansTable();
+        updateSortButtons();
+      };
+
+      updateSortButtons();
+
+      // Admin open
+      const loginModal = new bootstrap.Modal(document.getElementById("adminLoginModal"));
+      const panelModal = new bootstrap.Modal(document.getElementById("adminPanelModal"));
+
+      $("adminOpen").onclick = (e) => {
+        e.preventDefault();
+        $("adminPass").value = "";
+        loginModal.show();
+      };
+
+      $("btnAdminLogin").onclick = () => {
+        const pass = $("adminPass").value;
+        if (verifyAdmin(pass)){
+          loginModal.hide();
+          updateAdminPreview();
+          panelModal.show();
+          showToast("Admin unlocked", "You can now edit values and download CSVs.", "good");
+        } else {
+          showToast("Wrong password", "Password is incorrect for this minute.", "bad");
+        }
+      };
+
+      // Admin panel events
+      ["adminMember","adminType","adminMonth","adminAmount","adminNote"].forEach(id => {
+        $(id).addEventListener("input", updateAdminPreview);
+        $(id).addEventListener("change", updateAdminPreview);
+      });
+
+      $("btnApplyChange").onclick = applyAdminChange;
+      $("btnDownloadCsv").onclick = downloadCSVs;
+      $("btnDiscardChanges").onclick = discardAdminChanges;
+
+      // Initial load (cache-busted)
+      loadAll();
+    });
+  </script>
+</body>
+</html>
