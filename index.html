@@ -282,6 +282,40 @@
 
     @media print{
       #adminOpen, #btnReload, #btnToggleLoans, .sortbar, .snap-btn{ display:none !important; }
+          @media print{
+      #adminOpen, #btnReload, #btnToggleLoans, .sortbar, .snap-btn{ display:none !important; }
+    }
+
+    /* Payments year toggle (match Loans button style) */
+    .toggle-container{
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .toggle-btn{
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 600;
+      transition: .15s ease;
+    }
+
+    .toggle-btn:hover{
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.16);
+    }
+
+    .toggle-btn.active{
+      background: rgba(110,168,254,.18);
+      border-color: rgba(110,168,254,.45);
+      box-shadow: inset 0 0 0 9999px rgba(110,168,254,.06);
+    }
+</style>
+
     }
   </style>
 </head>
@@ -756,21 +790,31 @@ function completedMonthsBetween(fromDate, toDate){
     /***********************
      * CSV LOAD
      ***********************/
-    function parseCSV(file){
-      // NEW: cache-busting query string to avoid Chrome stale cache
-      const sep = file.includes("?") ? "&" : "?";
-      const url = `${file}${sep}v=${cacheBuster}`;
+    async function parseCSV(file){
+  const sep = file.includes("?") ? "&" : "?";
+  const url = `${file}${sep}v=${cacheBuster}`;
 
-      return new Promise((resolve, reject) => {
-        Papa.parse(url, {
-          header: true,
-          download: true,
-          skipEmptyLines: "greedy",
-          complete: (res) => resolve(res.data || []),
-          error: (err) => reject(err)
-        });
-      });
-    }
+  // Fetch first so we can detect 404/403 clearly
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok){
+    throw new Error(`CSV fetch failed (${res.status}) for: ${file}`);
+  }
+
+  const text = await res.text();
+
+  return new Promise((resolve, reject) => {
+    Papa.parse(text, {
+      header: true,
+      skipEmptyLines: "greedy",
+      complete: (result) => {
+        // Optional: if Papa sees parse errors, show them in console
+        if (result?.errors?.length) console.warn("PapaParse errors:", result.errors);
+        resolve(result.data || []);
+      },
+      error: reject
+    });
+  });
+}
 
     async function loadAll(){
       try{
@@ -813,9 +857,11 @@ function completedMonthsBetween(fromDate, toDate){
         showToast("Loaded", "CSV files loaded and dashboard refreshed.", "good");
       }catch(e){
         console.error(e);
-        showToast("Error", "Failed to load CSV files. Check file names/paths and GitHub Pages hosting.", "bad");
+        const pf = PAYMENTS_FILES[activePaymentsYear];
+        showToast("Error", `Failed to load CSV. Payments file: ${pf}, Loans file: ${CSV_LOANS}`, "bad");
         warn(`Load error: ${String(e)}`);
       }
+
     }
 
     function normalizeRows(rows){
@@ -1821,6 +1867,11 @@ function switchPaymentsYear(year){
       $("btnApplyChange").onclick = applyAdminChange;
       $("btnDownloadCsv").onclick = downloadCSVs;
       $("btnDiscardChanges").onclick = discardAdminChanges;
+      
+      // Make sure UI shows the default year
+$("payments2026Btn").classList.add("active");
+$("payments2025Btn").classList.remove("active");
+
 
       // Initial load (cache-busted)
       loadAll();
