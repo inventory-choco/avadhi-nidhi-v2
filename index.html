@@ -994,218 +994,83 @@ function completedMonthsBetween(fromDate, toDate){
     /***********************
      * COMPUTATIONS
      ***********************/
-    function computeAll(){
+   function computeAll(){
+  const members = paymentsCalcRows.length;
+  let paidTill = 0;
+  let outTill = 0;
 
-      const members = paymentsRows.length;
-let paidTill = 0;
-let outTill = 0;
+  // FUND-LEVEL expected till date (correct logic)
+  const firstMonthKey = paymentsCalcMonthKeys[0] || null;
+  const totalMonthsTill =
+    firstMonthKey && activeMonthKey
+      ? countMonthsTill(activeMonthKey, paymentsCalcMonthKeys)
+      : 0;
 
-	// FUND-LEVEL expected till date (correct logic)
-const firstMonthKey = paymentsMonthKeys[0] || null;
+  // Business rule:
+  // Expected = (Members × Months × 100) + (Members × OB 400)
+  let expectedTill =
+    (members * totalMonthsTill * MONTHLY_CONTRIBUTION) +
+    (members * 400);
 
-const totalMonthsTill =
-  firstMonthKey && activeMonthKey
-    ? countMonthsTill(activeMonthKey, paymentsMonthKeys)
-    : 0;
+  // Expected this month
+  const expectedMonth = members * MONTHLY_CONTRIBUTION;
 
-// Business rule:
-// Expected = (Members × Months × 100) + (Members × OB 400)
-let expectedTill =
-  (members * totalMonthsTill * MONTHLY_CONTRIBUTION) +
-  (members * 400);
-
-      // Expected this month
-      const expectedMonth = members * MONTHLY_CONTRIBUTION;
-
-      // Paid this month
-      let paidMonth = 0;
-      for (const r of paymentsRows){
-        paidMonth += safeNum(r[activeMonthKey]);
-      }
-      const outMonth = expectedMonth - paidMonth;
-
-      
-      // Also detect mismatches in CSV Total Paid (informational)
-      const mismatches = [];
-
-      // Prepare payments computed rows
-      paymentsComputedRows = paymentsRows.map((r) => {
-        const name = r.Name;
-        const ob = safeNum(r.OB);
-        const paidMonthsSumTill = sumMonths(r, paymentsMonthKeys, activeMonthKey);
-        const paidMonthsSumAll = sumMonths(r, paymentsMonthKeys, null); // sum all payment month columns
-        const calcTotalPaid = ob + paidMonthsSumAll;
-
-        const paidTillMember = ob + paidMonthsSumTill;        
-        paidTill += paidTillMember;
-
-
-
-        // Compare CSV Total Paid vs computed (optional check)
-        const csvTotalPaid = safeNum(r["Total Paid"]);
-        if (isFinite(csvTotalPaid) && Math.abs(csvTotalPaid - calcTotalPaid) > 0.01){
-          mismatches.push({ Name: name, csv: csvTotalPaid, calc: calcTotalPaid });
-        }
-
-
-        return { ...r, "__calcTotalPaid": calcTotalPaid };
-      });
-outTill = expectedTill - paidTill;
-      // Loans computed
-      const loansAgg = computeLoans();
-
-      // Fund balance
-      const fundBalance = paidTill - loansAgg.totalLoanProvided + loansAgg.totalLoanRepaid;
-
-      computed = {
-        members,
-        expectedMonth,
-        paidMonth,
-        outMonth,
-        expectedTill,
-        paidTill,
-        outTill,
-        totalLoanProvided: loansAgg.totalLoanProvided,
-        totalLoanRepaid: loansAgg.totalLoanRepaid,
-        totalLoanOutstanding: loansAgg.totalLoanOutstanding,
-        fundBalance
-      };
-
-      // Warnings for mismatches
-      if (mismatches.length){
-        warn(`Some members have "Total Paid" in payments.csv that does not match calculated total (OB + sum of all month columns). This is fine, but you may want to correct it. Example: ${mismatches[0].Name} (CSV ${mismatches[0].csv}, Calc ${mismatches[0].calc.toFixed(2)}).`);
-      }
-    }
-
-    function countMonthsTill(activeKey, monthKeys){
-      if (!activeKey) return 0;
-      const ad = monthKeyToDate(activeKey);
-      if (!ad) return 0;
-      return monthKeys.filter(k => {
-        const d = monthKeyToDate(k);
-        return d && d <= ad;
-      }).length;
-    }
-
-    function sumMonths(row, monthKeys, upToKey=null){
-      let limitDate = null;
-      if (upToKey){
-        limitDate = monthKeyToDate(upToKey);
-      }
-      let sum = 0;
-      for (const k of monthKeys){
-        const d = monthKeyToDate(k);
-        if (limitDate && d && d > limitDate) continue;
-        sum += safeNum(row[k]);
-      }
-      return sum;
-    }
-
-    function computeLoans(){
-      loansComputedRows = [];
-
-      let totalLoanProvided = 0;
-      let totalLoanRepaid = 0;
-      let totalLoanOutstanding = 0;
-
-      for (const r of loanRows){
-        const name = r.Name;
-        const loanAmt = safeNum(r["LOAN AMOUNT"]);
-        const months = safeNum(r["AGREED TO REPAY IN (MONTHS)"]);
-        const hasLoan = loanAmt > 0 && months > 0;
-
-        const loanDate = parseDateDDMMYY(r["LOAN ISSUE DATE"]);
-        const repaid = sumMonths(r, loansMonthKeys, null); // sum all month columns in Loan.csv
-        const balance = hasLoan ? (loanAmt - repaid) : 0;
-
-        let emi = hasLoan ? (loanAmt / months) : 0;
-        emi = Number(emi.toFixed(2));
-
-        let monthsPassed = 0;
-let expectedTill = 0;
-
-if (hasLoan && loanDate){
-  // 2-month grace period
-  const graceEndDate = addMonthsSameDay(loanDate, 2);
-
-  // Use real "today", not month-only logic
-  const today = new Date();
-
-  // Count FULL completed EMI months after grace
-  monthsPassed = completedMonthsBetween(graceEndDate, today);
-
-  // Expected till date = EMI × monthsPassed, capped to loan amount
-  expectedTill = Math.min(
-    Number((monthsPassed * emi).toFixed(2)),
-    loanAmt
-  );
-}
-
-const overdueAmt = hasLoan
-  ? Math.max(0, Number((expectedTill - repaid).toFixed(2)))
-  : 0;
-
-
-        let status = "No Loan";
-let badge = "badge-soft";
-
-if (hasLoan){
-  const graceEndDate = loanDate ? addMonthsSameDay(loanDate, 2) : null;
-  const today = new Date();
-
-  if (repaid >= loanAmt - 0.009){
-    status = "Cleared";
-    badge = "badge-soft good";
+  // Paid this month
+  let paidMonth = 0;
+  for (const r of paymentsCalcRows){
+    paidMonth += safeNum(r[activeMonthKey]);
   }
-  else if (graceEndDate && today < graceEndDate){
-    status = "Not Yet Due";
-    badge = "badge-soft";
-  }
-  else if (repaid >= expectedTill - 0.009){
-    status = "On Time";
-    badge = "badge-soft good";
-  }
-  else{
-    status = "Overdue";
-    badge = "badge-soft bad";
+  const outMonth = expectedMonth - paidMonth;
+
+  // Also detect mismatches in CSV Total Paid (informational)
+  const mismatches = [];
+
+  // Prepare payments computed rows (using calc source)
+  paymentsComputedRows = paymentsCalcRows.map((r) => {
+    const name = r.Name;
+    const ob = safeNum(r.OB);
+    const paidMonthsSumTill = sumMonths(r, paymentsCalcMonthKeys, activeMonthKey);
+    const paidMonthsSumAll = sumMonths(r, paymentsCalcMonthKeys, null); // sum all payment month columns
+    const calcTotalPaid = ob + paidMonthsSumAll;
+    const paidTillMember = ob + paidMonthsSumTill;
+    paidTill += paidTillMember;
+
+    // Compare CSV Total Paid vs computed (optional check)
+    const csvTotalPaid = safeNum(r["Total Paid"]);
+    if (isFinite(csvTotalPaid) && Math.abs(csvTotalPaid - calcTotalPaid) > 0.01){
+      mismatches.push({ Name: name, csv: csvTotalPaid, calc: calcTotalPaid });
+    }
+    return { ...r, "__calcTotalPaid": calcTotalPaid };
+  });
+
+  outTill = expectedTill - paidTill;
+
+  // Loans computed
+  const loansAgg = computeLoans();
+
+  // Fund balance
+  const fundBalance = paidTill - loansAgg.totalLoanProvided + loansAgg.totalLoanRepaid;
+
+  computed = {
+    members,
+    expectedMonth,
+    paidMonth,
+    outMonth,
+    expectedTill,
+    paidTill,
+    outTill,
+    totalLoanProvided: loansAgg.totalLoanProvided,
+    totalLoanRepaid: loansAgg.totalLoanRepaid,
+    totalLoanOutstanding: loansAgg.totalLoanOutstanding,
+    fundBalance
+  };
+
+  // Warnings for mismatches
+  if (mismatches.length){
+    warn(`Some members have "Total Paid" in payments.csv that does not match calculated total (OB + sum of all month columns). This is fine, but you may want to correct it. Example: ${mismatches[0].Name} (CSV ${mismatches[0].csv}, Calc ${mismatches[0].calc.toFixed(2)}).`);
   }
 }
 
-
-        if (hasLoan){
-          totalLoanProvided += loanAmt;
-          totalLoanRepaid += repaid;
-          totalLoanOutstanding += Math.max(0, balance);
-        }
-
-        loansComputedRows.push({
-          SN: r.SN,
-          Name: name,
-          "Loan Date": hasLoan ? (r["LOAN ISSUE DATE"] || "") : "",
-          "Loan Amount": hasLoan ? Number(loanAmt.toFixed(2)) : "",
-          "Months": hasLoan ? months : "",
-          "EMI": hasLoan ? Number(emi.toFixed(2)) : "",
-          "Repaid": hasLoan ? Number(repaid.toFixed(2)) : "",
-		"Expected Till Date": hasLoan ? Number(expectedTill.toFixed(2)) : "",
-		"Overdue Amount": hasLoan ? Number(overdueAmt.toFixed(2)) : "",
-		"Balance": hasLoan ? Number(balance.toFixed(2)) : "",
-          "Status": `<span class="${badge}"><span class="dot ${badge.includes("good")?"good":badge.includes("bad")?"bad":"warn"}"></span>${status}</span>`,
-          "__rawStatus": status,
-          "__row": r
-        });
-      }
-
-      // NOTE: keep original severity sort as baseline,
-      // but sorting UI will override render order without changing calculations.
-      const severity = (s) => s === "Overdue" ? 0 : s === "On Time" ? 1 : s === "Not Yet Due" ? 2 : s === "Cleared" ? 3 : 4;
-      loansComputedRows.sort((a,b) => {
-        const sa = severity(a.__rawStatus), sb = severity(b.__rawStatus);
-        if (sa !== sb) return sa - sb;
-        return String(a.Name).localeCompare(String(b.Name));
-      });
-
-      return { totalLoanProvided, totalLoanRepaid, totalLoanOutstanding };
-    }
 
     /***********************
      * RENDER
