@@ -991,6 +991,16 @@ function completedMonthsBetween(fromDate, toDate){
   $("lastUpdated").textContent = latest ? latest : "—";
 }
 
+function countMonthsTill(activeKey, monthKeys) {
+  if (!activeKey) return 0;
+  const ad = monthKeyToDate(activeKey);
+  if (!ad) return 0;
+  return monthKeys.filter(k => {
+    const d = monthKeyToDate(k);
+    return d && d <= ad;
+  }).length;
+}
+
     /***********************
      * COMPUTATIONS
      ***********************/
