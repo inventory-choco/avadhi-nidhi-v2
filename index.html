@@ -965,29 +965,31 @@ function completedMonthsBetween(fromDate, toDate){
 
     // NEW: CSV-based last update (find latest month column that has any non-zero value)
     function updateLastDataUpdateLabel(){
-      const monthKeys = allMonthKeys;
-      if (!monthKeys.length){
-        $("lastUpdated").textContent = "—";
-        return;
-      }
+  const monthKeys = allMonthKeys;
+  if (!monthKeys.length){
+    $("lastUpdated").textContent = "—";
+    return;
+  }
 
-      const hasValueInMonth = (rows, key) => {
-        for (const r of rows){
-          const v = safeNum(r[key]);
-          if (v !== 0) return true;
-        }
-        return false;
-      };
-
-      let latest = null;
-      for (const k of monthKeys){
-        if (hasValueInMonth(paymentsRows, k) || hasValueInMonth(loanRows, k)){
-          latest = k;
-        }
-      }
-
-      $("lastUpdated").textContent = latest ? latest : "—";
+  const hasValueInMonth = (rows, key) => {
+    for (const r of rows){
+      const v = safeNum(r[key]);
+      if (v !== 0) return true;
     }
+    return false;
+  };
+
+  let latest = null;
+
+  // IMPORTANT CHANGE: use the CALCULATION source (which is always 2026)
+  for (const k of monthKeys){
+    if (hasValueInMonth(paymentsCalcRows, k) || hasValueInMonth(loanRows, k)){
+      latest = k;
+    }
+  }
+
+  $("lastUpdated").textContent = latest ? latest : "—";
+}
 
     /***********************
      * COMPUTATIONS
