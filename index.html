@@ -702,6 +702,20 @@ let activeMonthDate = null;
       return /^[A-Za-z]{3}-\d{2}$/.test((k||"").trim());
     }
 
+function sumMonths(row, monthKeys, upToKey = null) {
+  let limitDate = null;
+  if (upToKey) {
+    limitDate = monthKeyToDate(upToKey);
+  }
+  let sum = 0;
+  for (const k of monthKeys) {
+    const d = monthKeyToDate(k);
+    if (limitDate && d && d > limitDate) continue;
+    sum += safeNum(row[k]);
+  }
+  return sum;
+}
+
     function monthKeyToDate(k){
       // k like "Jan-26"
       const m = (k||"").trim().slice(0,3);
