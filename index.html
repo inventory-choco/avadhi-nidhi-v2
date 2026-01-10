@@ -280,13 +280,16 @@
     }
     .snap-btn:hover{ background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.16); }
 
-    @media print{
-      #adminOpen, #btnReload, #btnToggleLoans, .sortbar, .snap-btn{ display:none !important; }
+        @media print {
+      #adminOpen, #btnReload, #btnToggleLoans, .sortbar, .snap-btn {
+        display: none !important;
+      }
+    }
 
     /* Payments year toggle (match Loans button style) */
-    .toggle-container{
-      display:flex;
-      gap:10px;
+    .toggle-container {
+      display: flex;
+      gap: 10px;
       flex-wrap: wrap;
       margin-top: 6px;
     }
@@ -630,18 +633,32 @@ let activePaymentsYear = 2026; // default
     const MONTHLY_CONTRIBUTION = 100;
     const CURRENCY = "AED";
 
+// ──────────────────────────────────────────────────────────────
+// YEAR-SEPARATED PAYMENTS STATE (this is the key change for Step 2)
+// ──────────────────────────────────────────────────────────────
+
+let payments2026Rows = [];
+let payments2026MonthKeys = [];
+
+let payments2025Rows = [];
+let payments2025MonthKeys = [];
+
+// These will point to the currently selected year for DISPLAY ONLY
+let paymentsDisplayRows = [];
+let paymentsDisplayMonthKeys = [];
+
+// Calculation source → will ALWAYS be 2026 from now on
+let paymentsCalcRows = [];          // ← will be set to payments2026Rows
+let paymentsCalcMonthKeys = [];     // ← will be set to payments2026MonthKeys
+
     /***********************
-     * STATE
-     ***********************/
-    let paymentsRows = [];
-    let loanRows = [];
-
-    let paymentsMonthKeys = []; // sorted MMM-YY keys
-    let loansMonthKeys = [];    // sorted MMM-YY keys
-    let allMonthKeys = [];      // union sorted
-
-    let activeMonthKey = null;
-    let activeMonthDate = null;
+ * STATE
+ ***********************/
+let loanRows = [];
+let loansMonthKeys = []; // sorted MMM-YY keys
+let allMonthKeys = []; // union sorted
+let activeMonthKey = null;
+let activeMonthDate = null;
 
     let computed = {
       members: 0,
@@ -818,22 +835,47 @@ function completedMonthsBetween(fromDate, toDate){
         $("warningsArea").style.display = "none";
         $("warningsArea").innerHTML = "";
 
-        const [p, l] = await Promise.all([
-  parseCSV(PAYMENTS_FILES[activePaymentsYear]),
-  parseCSV(CSV_LOANS)
-]);
+               // ──────────────────────────────────────────────────────────────
+       // Load BOTH years + loans  (Step 3 change)
+       // ──────────────────────────────────────────────────────────────
+       const [p2025, p2026, l] = await Promise.all([
+         parseCSV(PAYMENTS_FILES[2025]),
+         parseCSV(PAYMENTS_FILES[2026]),
+         parseCSV(CSV_LOANS)
+       ]);
 
-        paymentsRows = normalizeRows(p).filter(r => (r.Name || r["Name"]) && String(r.Name || r["Name"]).trim() && (r.SN || r["SN"]));
-        loanRows = normalizeRows(l).filter(r => (r.Name || r["Name"]) && String(r.Name || r["Name"]).trim() && (r.SN || r["SN"]));
+       // Normalize and filter valid rows
+       payments2025Rows = normalizeRows(p2025).filter(r => 
+         (r.Name || r["Name"]) && String(r.Name || r["Name"]).trim() && (r.SN || r["SN"])
+       );
+       payments2026Rows = normalizeRows(p2026).filter(r => 
+         (r.Name || r["Name"]) && String(r.Name || r["Name"]).trim() && (r.SN || r["SN"])
+       );
+       loanRows = normalizeRows(l).filter(r => 
+         (r.Name || r["Name"]) && String(r.Name || r["Name"]).trim() && (r.SN || r["SN"])
+       );
 
-        // Extract month columns
-        paymentsMonthKeys = sortMonthKeys(extractMonthKeys(paymentsRows));
-        loansMonthKeys = sortMonthKeys(extractMonthKeys(loanRows));
-        allMonthKeys = sortMonthKeys([...paymentsMonthKeys, ...loansMonthKeys]);
+       // Extract month columns for each year separately
+       payments2025MonthKeys = sortMonthKeys(extractMonthKeys(payments2025Rows));
+       payments2026MonthKeys = sortMonthKeys(extractMonthKeys(payments2026Rows));
+       loansMonthKeys = sortMonthKeys(extractMonthKeys(loanRows));
 
-        if (paymentsMonthKeys.length === 0){
-          warn(`payments.csv has no month columns like "Jan-26".`);
-        }
+       // Union of all months (used for admin month selector etc.)
+       allMonthKeys = sortMonthKeys([
+         ...payments2025MonthKeys,
+         ...payments2026MonthKeys,
+         ...loansMonthKeys
+       ]);
+
+       // ──────────────────────────────────────────────────────────────
+       // LOCK CALCULATIONS TO 2026 FOREVER
+       // ──────────────────────────────────────────────────────────────
+       paymentsCalcRows      = payments2026Rows;
+       paymentsCalcMonthKeys = payments2026MonthKeys;
+
+       // Initial display = current year (2026)
+       paymentsDisplayRows      = payments2026Rows;
+       paymentsDisplayMonthKeys = payments2026MonthKeys;
         if (allMonthKeys.length === 0){
           warn(`No month columns detected in either CSV. Please use headers like "Jan-26".`);
         }
