@@ -1018,6 +1018,106 @@ function countMonthsTill(activeKey, monthKeys) {
     /***********************
      * COMPUTATIONS
      ***********************/
+function computeLoans() {
+  loansComputedRows = [];
+  let totalLoanProvided = 0;
+  let totalLoanRepaid = 0;
+  let totalLoanOutstanding = 0;
+
+  for (const r of loanRows) {
+    const name = r.Name;
+    const loanAmt = safeNum(r["LOAN AMOUNT"]);
+    const months = safeNum(r["AGREED TO REPAY IN (MONTHS)"]);
+    const hasLoan = loanAmt > 0 && months > 0;
+    const loanDate = parseDateDDMMYY(r["LOAN ISSUE DATE"]);
+    const repaid = sumMonths(r, loansMonthKeys, null); // sum all month columns in Loan.csv
+    const balance = hasLoan ? (loanAmt - repaid) : 0;
+
+    let emi = hasLoan ? (loanAmt / months) : 0;
+    emi = Number(emi.toFixed(2));
+
+    let monthsPassed = 0;
+    let expectedTill = 0;
+
+    if (hasLoan && loanDate) {
+      // 2-month grace period
+      const graceEndDate = addMonthsSameDay(loanDate, 2);
+      const today = new Date();
+
+      // Count FULL completed EMI months after grace
+      monthsPassed = completedMonthsBetween(graceEndDate, today);
+
+      // Expected till date = EMI × monthsPassed, capped to loan amount
+      expectedTill = Math.min(
+        Number((monthsPassed * emi).toFixed(2)),
+        loanAmt
+      );
+    }
+
+    const overdueAmt = hasLoan
+      ? Math.max(0, Number((expectedTill - repaid).toFixed(2)))
+      : 0;
+
+    let status = "No Loan";
+    let badge = "badge-soft";
+
+    if (hasLoan) {
+      const graceEndDate = loanDate ? addMonthsSameDay(loanDate, 2) : null;
+      const today = new Date();
+
+      if (repaid >= loanAmt - 0.009) {
+        status = "Cleared";
+        badge = "badge-soft good";
+      } else if (graceEndDate && today < graceEndDate) {
+        status = "Not Yet Due";
+        badge = "badge-soft";
+      } else if (repaid >= expectedTill - 0.009) {
+        status = "On Time";
+        badge = "badge-soft good";
+      } else {
+        status = "Overdue";
+        badge = "badge-soft bad";
+      }
+    }
+
+    if (hasLoan) {
+      totalLoanProvided += loanAmt;
+      totalLoanRepaid += repaid;
+      totalLoanOutstanding += Math.max(0, balance);
+    }
+
+    loansComputedRows.push({
+      SN: r.SN,
+      Name: name,
+      "Loan Date": hasLoan ? (r["LOAN ISSUE DATE"] || "") : "",
+      "Loan Amount": hasLoan ? Number(loanAmt.toFixed(2)) : "",
+      "Months": hasLoan ? months : "",
+      "EMI": hasLoan ? Number(emi.toFixed(2)) : "",
+      "Repaid": hasLoan ? Number(repaid.toFixed(2)) : "",
+      "Expected Till Date": hasLoan ? Number(expectedTill.toFixed(2)) : "",
+      "Overdue Amount": hasLoan ? Number(overdueAmt.toFixed(2)) : "",
+      "Balance": hasLoan ? Number(balance.toFixed(2)) : "",
+      "Status": `<span class="${badge}"><span class="dot ${badge.includes("good")?"good":badge.includes("bad")?"bad":"warn"}"></span>${status}</span>`,
+      "__rawStatus": status,
+      "__row": r
+    });
+  }
+
+  // Sort by severity first, then name
+  const severity = (s) => s === "Overdue" ? 0 : s === "On Time" ? 1 : s === "Not Yet Due" ? 2 : s === "Cleared" ? 3 : 4;
+  loansComputedRows.sort((a, b) => {
+    const sa = severity(a.__rawStatus), sb = severity(b.__rawStatus);
+    if (sa !== sb) return sa - sb;
+    return String(a.Name).localeCompare(String(b.Name));
+  });
+
+  return {
+    totalLoanProvided,
+    totalLoanRepaid,
+    totalLoanOutstanding
+  };
+}
+
    function computeAll(){
   const members = paymentsCalcRows.length;
   let paidTill = 0;
