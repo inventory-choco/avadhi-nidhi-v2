@@ -1393,27 +1393,26 @@ function computeLoans() {
       table.appendChild(tbody);
     }
 
-    /***********************
-     * MEMBER QUICK VIEW
-     ***********************/
-    function populateMemberSelects(){
-      const select = $("memberSelect");
-      select.innerHTML = `<option value="">Select member…</option>`;
-      const adminMember = $("adminMember");
-      adminMember.innerHTML = "";
+   // Populate member selectors (always from calculation source = 2026)
+function populateMemberSelects(){
+  const select = $("memberSelect");
+  select.innerHTML = `<option value="">Select member…</option>`;
+  const adminMember = $("adminMember");
+  adminMember.innerHTML = "";
 
-      const names = [...paymentsRows.map(r => r.Name)].sort((a,b)=>String(a).localeCompare(String(b)));
-      for (const n of names){
-        const opt = document.createElement("option");
-        opt.value = n;
-        opt.textContent = n;
-        select.appendChild(opt);
+  const names = [...paymentsCalcRows.map(r => r.Name)].sort((a,b)=>String(a).localeCompare(String(b)));
 
-        const opt2 = document.createElement("option");
-        opt2.value = n;
-        opt2.textContent = n;
-        adminMember.appendChild(opt2);
-      }
+  for (const n of names){
+    const opt = document.createElement("option");
+    opt.value = n;
+    opt.textContent = n;
+    select.appendChild(opt);
+
+    const opt2 = document.createElement("option");
+    opt2.value = n;
+    opt2.textContent = n;
+    adminMember.appendChild(opt2);
+  }
 
       // Months in admin: union
       const adminMonth = $("adminMonth");
