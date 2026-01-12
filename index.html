@@ -316,7 +316,6 @@
       box-shadow: inset 0 0 0 9999px rgba(110,168,254,.06);
     }
   </style>
-  
 </head>
 
 <body>
@@ -645,6 +644,9 @@ let payments2025MonthKeys = [];
 // These will point to the currently selected year for DISPLAY ONLY
 let paymentsDisplayRows = [];
 let paymentsDisplayMonthKeys = [];
+// Compatibility aliases (points to 2026 calculation data)
+let paymentsRows = []; 
+let paymentsMonthKeys = [];
 
 // Calculation source → will ALWAYS be 2026 from now on
 let paymentsCalcRows = [];          // ← will be set to payments2026Rows
@@ -885,6 +887,8 @@ function completedMonthsBetween(fromDate, toDate){
        // ──────────────────────────────────────────────────────────────
        paymentsCalcRows      = payments2026Rows;
        paymentsCalcMonthKeys = payments2026MonthKeys;
+	paymentsRows          = paymentsCalcRows; 
+       paymentsMonthKeys     = paymentsCalcMonthKeys;
 
        // Initial display = current year (2026)
        paymentsDisplayRows      = payments2026Rows;
@@ -1441,13 +1445,13 @@ function computeLoans() {
         return;
       }
 
-      const p = paymentsRows.find(r => r.Name === name);
-      const pCalc = paymentsComputedRows.find(r => r.Name === name);
-      const l = loansComputedRows.find(r => r.Name === name);
+      	const p = paymentsCalcRows.find(r => r.Name === name);
+      	const pCalc = paymentsComputedRows.find(r => r.Name === name);
+      	const l = loansComputedRows.find(r => r.Name === name);
 
-      const ob = p ? safeNum(p.OB) : 0;
-      const monthsTillCount = countMonthsTill(activeMonthKey, paymentsMonthKeys);
-      const expectedTill = (monthsTillCount * MONTHLY_CONTRIBUTION) + ob;
+      	const ob = p ? safeNum(p.OB) : 0;
+      	const monthsTillCount = countMonthsTill(activeMonthKey, paymentsCalcMonthKeys);
+      	const expectedTill = (monthsTillCount * MONTHLY_CONTRIBUTION) + ob;
 
       const paidTillMonths = p ? sumMonths(p, paymentsMonthKeys, activeMonthKey) : 0;
       const paidTill = ob + paidTillMonths;
