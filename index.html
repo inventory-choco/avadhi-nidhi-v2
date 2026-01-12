@@ -314,11 +314,21 @@
       border-color: rgba(110,168,254,.45);
       box-shadow: inset 0 0 0 9999px rgba(110,168,254,.06);
     }
+    .read-only-badge {
+  background: rgba(245,197,66,.12);
+  border: 1px solid rgba(245,197,66,.35);
+  color: var(--warn);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 </style>
 
-    }
-  </style>
-</head>
+    </head>
 
 <body>
   <div class="container-xl py-3">
@@ -446,17 +456,17 @@
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div>
           <h2 class="mb-1">Payments</h2>
-<div class="toggle-container" style="margin-bottom: 10px;">
-  <button id="payments2026Btn" class="toggle-btn active"
-          onclick="switchPaymentsYear(2026)">
+<div class="toggle-container" style="margin-bottom: 10px; align-items: center; gap: 16px; flex-wrap: wrap;">
+  <button id="payments2026Btn" class="toggle-btn active" onclick="switchPaymentsYear(2026)">
     Payments 2026
   </button>
-  <button id="payments2025Btn" class="toggle-btn"
-          onclick="switchPaymentsYear(2025)">
+  <button id="payments2025Btn" class="toggle-btn" onclick="switchPaymentsYear(2025)">
     Payments 2025
   </button>
+  <span id="yearModeBadge" class="read-only-badge" style="display:none;">
+    <span class="dot warn"></span> Read-only historical view
+  </span>
 </div>
-
           <div class="muted">Totals row is calculated. Current month column is highlighted.</div>
         </div>
 
@@ -1718,11 +1728,28 @@ function switchPaymentsYear(year){
 
   activePaymentsYear = year;
 
+  // Update button active state
   $("payments2026Btn").classList.toggle("active", year === 2026);
   $("payments2025Btn").classList.toggle("active", year === 2025);
 
-  cacheBuster = Date.now(); // force fresh CSV
-  loadAll();
+  // Update display data (only affects table)
+  if (year === 2026) {
+    paymentsDisplayRows = payments2026Rows;
+    paymentsDisplayMonthKeys = payments2026MonthKeys;
+    $("yearModeBadge").style.display = "none";
+  } else {
+    paymentsDisplayRows = payments2025Rows;
+    paymentsDisplayMonthKeys = payments2025MonthKeys;
+    $("yearModeBadge").style.display = "inline-flex";
+  }
+
+  // Re-render only the payments table
+  renderPaymentsTable();
+
+  // Optional: update active month label if needed, but we keep it global
+  determineActiveMonth(); // safe to call, doesn't affect calcs
+
+  showToast("View switched", `Now showing Payments ${year}`, "info");
 }
 
     document.addEventListener("DOMContentLoaded", () => {
