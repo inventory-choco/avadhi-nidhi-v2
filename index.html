@@ -1740,7 +1740,7 @@ function switchPaymentsYear(year) {
   $("payments2026Btn").classList.toggle("active", year === 2026);
   $("payments2025Btn").classList.toggle("active", year === 2025);
 
-  // Switch display data (affects only table)
+  // Switch display data (only affects table)
   if (year === 2026) {
     paymentsDisplayRows = payments2026Rows;
     paymentsDisplayMonthKeys = payments2026MonthKeys;
@@ -1751,10 +1751,10 @@ function switchPaymentsYear(year) {
     $("yearModeBadge").style.display = "inline-flex";
   }
 
-  // Re-render payments table
+  // Re-render only the payments table
   renderPaymentsTable();
 
-  // Refresh active month display
+  // Refresh active month label
   determineActiveMonth();
 
   showToast("View switched", `Now showing Payments ${year}`, "info");
@@ -1794,14 +1794,14 @@ function switchPaymentsYear(year) {
       : "Admin (editing only available for 2026)";
   }
 
-  // If admin modal is open, force-disable again
+  // If admin modal is already open, force-disable inputs again
   if (bootstrap.Modal.getInstance($('#adminPanelModal'))) {
     setTimeout(() => {
       document.querySelectorAll('#adminPanelModal .form-control, #adminPanelModal .form-select')
         .forEach(el => el.disabled = isReadOnly);
     }, 100);
   }
-}   
+}  
 
 document.addEventListener("DOMContentLoaded", () => {
       // Reload CSV: NEW cache-buster to force newest data (Chrome cache fix)
