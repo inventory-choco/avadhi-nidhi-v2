@@ -314,21 +314,10 @@
       border-color: rgba(110,168,254,.45);
       box-shadow: inset 0 0 0 9999px rgba(110,168,254,.06);
     }
-
-	.read-only-badge {
-  background: rgba(245,197,66,.12);
-  border: 1px solid rgba(245,197,66,.35);
-  color: var(--warn);
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
 </style>
+
+    }
+  </style>
 </head>
 
 <body>
@@ -353,7 +342,7 @@
 
         <a class="btn btn-primary" href="LoanRequestForm.html">Request for a Loan</a>
 
-
+        <a href="#" class="admin-link ms-2" id="adminOpen">⚙ Admin</a>
       </div>
     </div>
 
@@ -457,17 +446,17 @@
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div>
           <h2 class="mb-1">Payments</h2>
-<div class="toggle-container" style="margin-bottom: 10px; align-items: center; gap: 16px; flex-wrap: wrap;">
-  <button id="payments2026Btn" class="toggle-btn active" onclick="switchPaymentsYear(2026)">
+<div class="toggle-container" style="margin-bottom: 10px;">
+  <button id="payments2026Btn" class="toggle-btn active"
+          onclick="switchPaymentsYear(2026)">
     Payments 2026
   </button>
-  <button id="payments2025Btn" class="toggle-btn" onclick="switchPaymentsYear(2025)">
+  <button id="payments2025Btn" class="toggle-btn"
+          onclick="switchPaymentsYear(2025)">
     Payments 2025
   </button>
-  <span id="yearModeBadge" class="read-only-badge" style="display:none;">
-    <span class="dot warn"></span> Read-only historical view
-  </span>
 </div>
+
           <div class="muted">Totals row is calculated. Current month column is highlighted.</div>
         </div>
 
@@ -518,8 +507,109 @@
     </div>
   </div>
 
-  
-  
+  <!-- ADMIN LOGIN MODAL -->
+  <div class="modal fade" id="adminLoginModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">Admin Panel</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-0">
+          <div class="help mb-2">
+            Enter the admin password for the current minute.
+          </div>
+          <input id="adminPass" class="form-control" placeholder="Password" autocomplete="off" />
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-primary flex-fill" id="btnAdminLogin">Unlock</button>
+            <button class="btn btn-soft" data-bs-dismiss="modal">Cancel</button>
+          </div>
+          <div class="help mt-2">
+            Tip: password changes every minute.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL MODAL -->
+  <div class="modal fade" id="adminPanelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <div>
+            <h5 class="modal-title fw-bold mb-1">Admin Panel</h5>
+            <div class="help">Edit values, then download updated CSV files.</div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body pt-0">
+          <div class="warn-box mb-3">
+            <div class="fw-bold mb-1">How saving works</div>
+            <div class="help">
+              This page will <strong>download updated payments.csv and Loan.csv</strong>.
+              Then upload/commit them to GitHub using GitHub Desktop (your existing workflow).
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Member</label>
+              <select class="form-select" id="adminMember"></select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Entry Type</label>
+              <select class="form-select" id="adminType">
+                <option value="payment">Monthly Payment</option>
+                <option value="loanrepay">Loan Repayment (month column)</option>
+              </select>
+              <div class="help mt-1">Loan repayment updates the month amount inside Loan.csv for that member.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Month</label>
+              <select class="form-select" id="adminMonth"></select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Amount</label>
+              <input class="form-control" id="adminAmount" placeholder="e.g., 100 or 200" inputmode="decimal" />
+              <div class="help mt-1">Use numbers only. You can enter 200 if someone skipped and paid next month.</div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Note (optional)</label>
+              <input class="form-control" id="adminNote" placeholder="Optional note for yourself (not saved in CSV)" />
+            </div>
+          </div>
+
+          <div class="glass2 p-3 mt-3">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div>
+                <div class="fw-bold">Preview</div>
+                <div class="help" id="adminPreview">Select member/type/month and enter amount.</div>
+              </div>
+              <span class="badge-soft" id="unsavedBadge" style="display:none;">
+                <span class="dot warn"></span> Unsaved changes
+              </span>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap mt-3">
+              <button class="btn btn-soft" id="btnApplyChange">Apply Change</button>
+              <button class="btn btn-primary" id="btnDownloadCsv">Download Updated CSVs</button>
+              <button class="btn btn-soft" id="btnDiscardChanges">Discard Changes</button>
+            </div>
+          </div>
+
+          <div class="help mt-3">
+            Note: This admin gate is <strong>obfuscation</strong> (not bank-grade security). Don’t share the logic.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="toast-wrap" id="toastWrap"></div>
 
@@ -1303,7 +1393,10 @@ function computeLoans() {
       table.appendChild(tbody);
     }
 
-   // Populate member selectors (always from calculation source = 2026)
+    /***********************
+     * MEMBER QUICK VIEW
+     ***********************/
+    / Populate member selectors (always from calculation source = 2026)
 function populateMemberSelects(){
   const select = $("memberSelect");
   select.innerHTML = `<option value="">Select member…</option>`;
@@ -1339,92 +1432,16 @@ function populateMemberSelects(){
       renderMemberCard(select.value);
     }
 
-    function renderMemberCard(name) {
-  const card = $("memberCard");
-  const snap = $("btnSnapshot");
+    renderMemberCard
 
-  if (!name) {
-    card.innerHTML = `<div class="muted">Pick a member to see details.</div>`;
-    snap.style.opacity = ".45";
-    snap.style.pointerEvents = "none";
-    snap.dataset.member = "";
-    return;
-  }
-
-  // Use calculation source (always 2026)
-  const p = paymentsCalcRows.find(r => r.Name === name);
-  const pCalc = paymentsComputedRows.find(r => r.Name === name);
-  const l = loansComputedRows.find(r => r.Name === name);
-
-  const ob = p ? safeNum(p.OB) : 0;
-  const monthsTillCount = countMonthsTill(activeMonthKey, paymentsCalcMonthKeys);
-  const expectedTill = (monthsTillCount * MONTHLY_CONTRIBUTION) + ob;
-
-  const paidTillMonths = p ? sumMonths(p, paymentsCalcMonthKeys, activeMonthKey) : 0;
-  const paidTill = ob + paidTillMonths;
-  const outstanding = expectedTill - paidTill;
-
-  const currentMonthPaid = p ? safeNum(p[activeMonthKey]) : 0;
-
-  // Loan summary
-  const hasLoan = l && l["Loan Amount"] !== "";
-  const loanAmt = hasLoan ? safeNum(l["Loan Amount"]) : 0;
-  const loanRepaid = hasLoan ? safeNum(l["Repaid"]) : 0;
-  const loanBalance = hasLoan ? safeNum(l["Balance"]) : 0;
-
-  let loanBadge = `<span class="badge-soft"><span class="dot"></span>No Loan</span>`;
-  if (hasLoan) {
-    const s = l.__rawStatus || "Active";
-    if (s === "On Time" || s === "Cleared") loanBadge = `<span class="badge-soft good"><span class="dot good"></span>${s}</span>`;
-    else if (s === "Not Yet Due") loanBadge = `<span class="badge-soft"><span class="dot warn"></span>${s}</span>`;
-    else loanBadge = `<span class="badge-soft bad"><span class="dot bad"></span>${s}</span>`;
-  }
-
-  const totalPaidCalc = pCalc ? pCalc.__calcTotalPaid : (p ? safeNum(p["Total Paid"]) : 0);
-  const outClass = outstanding <= 0 ? "good" : outstanding < MONTHLY_CONTRIBUTION ? "warn" : "bad";
-  const outBadge = `<span class="badge-soft ${outClass}"><span class="dot ${outClass}"></span>Outstanding: ${CURRENCY} ${toMoney(outstanding,2)}</span>`;
-
-  card.innerHTML = `
-    <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
-      <div>
-        <div class="fw-bold" style="font-size:1.05rem;">${name}</div>
-        <div class="help">Active month: <strong>${activeMonthKey || "—"}</strong> • Current month paid: <strong>${CURRENCY} ${toMoney(currentMonthPaid,0)}</strong></div>
-      </div>
-      <div class="d-flex gap-2 flex-wrap">
-        ${outBadge}
-        ${loanBadge}
-      </div>
-    </div>
-    <div class="row g-2 mt-3">
-      <div class="col-md-4">
-        <div class="glass2 p-3">
-          <div class="muted">Expected till date (incl. OB)</div>
-          <div class="fw-bold mt-1">${CURRENCY} ${toMoney(expectedTill,2)}</div>
-          <div class="help">OB: ${CURRENCY} ${toMoney(ob,2)}</div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="glass2 p-3">
-          <div class="muted">Paid till date (incl. OB)</div>
-          <div class="fw-bold mt-1">${CURRENCY} ${toMoney(paidTill,2)}</div>
-          <div class="help">Calculated total paid (all months): ${CURRENCY} ${toMoney(totalPaidCalc,2)}</div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="glass2 p-3">
-          <div class="muted">Loan summary</div>
-          <div class="fw-bold mt-1">${hasLoan ? `${CURRENCY} ${toMoney(loanBalance,2)} balance` : "—"}</div>
-          <div class="help">${hasLoan ? `Loan: ${CURRENCY} ${toMoney(loanAmt,2)} • Repaid: ${CURRENCY} ${toMoney(loanRepaid,2)}` : "No active loan record"}</div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Enable snapshot button
-  snap.style.opacity = "1";
-  snap.style.pointerEvents = "auto";
-  snap.dataset.member = name;
-}
+    // NEW: snapshot feature (PC + mobile)
+    function sanitizeFilePart(s){
+      return String(s || "")
+        .trim()
+        .replace(/\s+/g, "_")
+        .replace(/[\/\\:*?"<>|]/g, "")   // illegal filename chars
+        .slice(0, 80);
+    }
 
     function pad2(n){ return String(n).padStart(2, "0"); }
 
@@ -1461,7 +1478,237 @@ function populateMemberSelects(){
       }
     }
 
-   
+    /***********************
+     * ADMIN (OBFUSCATED PASSWORD GATE)
+     ***********************/
+    function obfMinutePass(){
+      // Password target: DDMMYYHHMM (local time), but obfuscated
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2,"0");
+
+      const dd = pad(d.getDate());
+      const mm = pad(d.getMonth()+1);
+      const yy = String(d.getFullYear()).slice(-2);
+      const hh = pad(d.getHours());
+      const mi = pad(d.getMinutes());
+
+      const junk = ["x","7","k","Q","0","m","9","z"];
+      const spin = (s) => s.split("").reverse().join("");
+      const t1 = dd + mm;
+      const t2 = yy + hh;
+      const t3 = mi;
+
+      const a = spin(t2);
+      const b = spin(t1);
+      const c = t3;
+      const noise = junk[(d.getSeconds() % junk.length)];
+
+      const ddmm = spin(b);
+      const yyhh = spin(a);
+      const out = (ddmm + yyhh + c).replace(noise, "");
+
+      return out; // DDMMYYHHMM
+    }
+
+    function verifyAdmin(pass){
+      const p = (pass||"").trim();
+      const real = obfMinutePass();
+      const mix = (s) => (s.split("").map((ch,i)=> String.fromCharCode(ch.charCodeAt(0) ^ (i%3))).join(""));
+      return mix(p) === mix(real);
+    }
+
+    /***********************
+     * ADMIN EDITING + CSV DOWNLOAD
+     ***********************/
+    function setUnsaved(on){
+      changes.touched = !!on;
+      $("unsavedBadge").style.display = changes.touched ? "inline-flex" : "none";
+    }
+
+    function getMemberRowPayments(name){
+      return paymentsRows.find(r => r.Name === name);
+    }
+
+    function getMemberRowLoans(name){
+      return loanRows.find(r => r.Name === name);
+    }
+
+    function ensureMonthColumn(rows, key){
+      if (!isMonthKey(key)) return;
+      for (const r of rows){
+        if (!(key in r)) r[key] = "";
+      }
+    }
+
+    function applyAdminChange(){
+      const name = $("adminMember").value;
+      const type = $("adminType").value;
+      const mkey = $("adminMonth").value;
+      const amtRaw = $("adminAmount").value;
+      const amt = Number(String(amtRaw).replace(/,/g,"").trim());
+
+      if (!name){
+        showToast("Admin", "Please select a member.", "warn");
+        return;
+      }
+      if (!isMonthKey(mkey)){
+        showToast("Admin", "Invalid month key. Use format like Jan-26.", "bad");
+        return;
+      }
+      if (!isFinite(amt) || amt < 0){
+        showToast("Admin", "Enter a valid amount (0 or more).", "warn");
+        return;
+      }
+
+      if (type === "payment"){
+        let row = getMemberRowPayments(name);
+        if (!row){
+          showToast("Admin", "Member not found in payments.csv.", "bad");
+          return;
+        }
+
+        ensureMonthColumn(paymentsRows, mkey);
+        if (!paymentsMonthKeys.includes(mkey)) {
+          paymentsMonthKeys = sortMonthKeys([...paymentsMonthKeys, mkey]);
+          allMonthKeys = sortMonthKeys([...allMonthKeys, mkey]);
+        }
+
+        row[mkey] = amt ? String(amt) : "";
+
+        // keep Total Paid consistent
+        const ob = safeNum(row.OB);
+        const totalMonths = sumMonths(row, paymentsMonthKeys, null);
+        row["Total Paid"] = (ob + totalMonths).toFixed(2);
+
+        setUnsaved(true);
+        showToast("Applied", `${name} • Payment • ${mkey} = ${amt}`, "good");
+      }
+
+      if (type === "loanrepay"){
+        let row = getMemberRowLoans(name);
+        if (!row){
+          const nextSN = computeNextSN(loanRows);
+          row = {
+            SN: String(nextSN),
+            Name: name,
+            "LOAN ISSUE DATE": "",
+            "LOAN AMOUNT": "",
+            "AGREED TO REPAY IN (MONTHS)": ""
+          };
+          loanRows.push(row);
+        }
+
+        ensureMonthColumn(loanRows, mkey);
+        if (!loansMonthKeys.includes(mkey)){
+          loansMonthKeys = sortMonthKeys([...loansMonthKeys, mkey]);
+          allMonthKeys = sortMonthKeys([...allMonthKeys, mkey]);
+        }
+
+        row[mkey] = amt ? String(amt) : "";
+
+        setUnsaved(true);
+        showToast("Applied", `${name} • Loan repayment • ${mkey} = ${amt}`, "good");
+      }
+
+      determineActiveMonth();
+      computeAll();
+      renderAll();
+      populateMemberSelects();
+      updateLastDataUpdateLabel();
+
+      updateAdminPreview();
+    }
+
+    function computeNextSN(rows){
+      let max = 0;
+      for (const r of rows){
+        const n = Number(r.SN);
+        if (isFinite(n)) max = Math.max(max, n);
+      }
+      return max + 1;
+    }
+
+    function discardAdminChanges(){
+      setUnsaved(false);
+      $("adminAmount").value = "";
+      $("adminNote").value = "";
+      showToast("Discarded", "Changes discarded by reloading CSV files.", "warn");
+      // NEW: also refresh cacheBuster to force fetch latest
+      cacheBuster = Date.now();
+      loadAll();
+    }
+
+    function downloadCSVs(){
+      if (!changes.touched){
+        showToast("Nothing to save", "No changes detected. Apply a change first.", "warn");
+        return;
+      }
+
+      for (const k of paymentsMonthKeys) ensureMonthColumn(paymentsRows, k);
+      for (const k of loansMonthKeys) ensureMonthColumn(loanRows, k);
+
+      const paymentsBase = ["SN","Name","Total Paid","OB"];
+      const paymentsHeaders = [...paymentsBase, ...paymentsMonthKeys];
+      const paymentsOut = paymentsRows
+        .slice()
+        .sort((a,b) => String(a.Name).localeCompare(String(b.Name)))
+        .map(r => pickColumns(r, paymentsHeaders));
+
+      const loansBase = ["SN","Name","LOAN ISSUE DATE","LOAN AMOUNT","AGREED TO REPAY IN (MONTHS)"];
+      const loansHeaders = [...loansBase, ...loansMonthKeys];
+      const loansOut = loanRows
+        .slice()
+        .sort((a,b) => String(a.Name).localeCompare(String(b.Name)))
+        .map(r => pickColumns(r, loansHeaders));
+
+      const paymentsCsv = Papa.unparse(paymentsOut, { columns: paymentsHeaders });
+      const loansCsv = Papa.unparse(loansOut, { columns: loansHeaders });
+
+      downloadTextFile(
+  paymentsCsv,
+  PAYMENTS_FILES[activePaymentsYear]
+);
+
+      downloadTextFile(loansCsv, "Loan.csv");
+
+      setUnsaved(false);
+      showToast("Downloaded", "Updated payments.csv and Loan.csv downloaded. Commit them via GitHub Desktop.", "good");
+    }
+
+    function pickColumns(row, headers){
+      const out = {};
+      for (const h of headers){
+        out[h] = (row[h] ?? "");
+      }
+      return out;
+    }
+
+    function downloadTextFile(text, filename){
+      const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function updateAdminPreview(){
+      const name = $("adminMember").value;
+      const type = $("adminType").value;
+      const mkey = $("adminMonth").value;
+      const amt = $("adminAmount").value;
+
+      const typeLabel = type === "payment" ? "Monthly Payment" : "Loan Repayment";
+      const note = $("adminNote").value ? ` • Note: ${$("adminNote").value}` : "";
+
+      $("adminPreview").textContent =
+        (name && mkey)
+          ? `${name} • ${typeLabel} • ${mkey} = ${amt || "—"}${note}`
+          : "Select member/type/month and enter amount.";
+    }
 
     /***********************
      * EVENTS
@@ -1471,29 +1718,13 @@ function switchPaymentsYear(year){
 
   activePaymentsYear = year;
 
-  // Update button active state
   $("payments2026Btn").classList.toggle("active", year === 2026);
   $("payments2025Btn").classList.toggle("active", year === 2025);
 
-  // Update display data (only affects table)
-  if (year === 2026) {
-    paymentsDisplayRows = payments2026Rows;
-    paymentsDisplayMonthKeys = payments2026MonthKeys;
-    $("yearModeBadge").style.display = "none";
-  } else {
-    paymentsDisplayRows = payments2025Rows;
-    paymentsDisplayMonthKeys = payments2025MonthKeys;
-    $("yearModeBadge").style.display = "inline-flex";
-  }
-
-  // Re-render only the payments table
-  renderPaymentsTable();
-
-  // Optional: update active month label if needed, but we keep it global
-  determineActiveMonth(); // safe to call, doesn't affect calcs
-
-  showToast("View switched", `Now showing Payments ${year}`, "info");
+  cacheBuster = Date.now(); // force fresh CSV
+  loadAll();
 }
+
     document.addEventListener("DOMContentLoaded", () => {
       // Reload CSV: NEW cache-buster to force newest data (Chrome cache fix)
       $("btnReload").onclick = () => { cacheBuster = Date.now(); loadAll(); };
@@ -1546,14 +1777,39 @@ function switchPaymentsYear(year){
 
       updateSortButtons();
 
-   
-      
+      // Admin open
+      const loginModal = new bootstrap.Modal(document.getElementById("adminLoginModal"));
+      const panelModal = new bootstrap.Modal(document.getElementById("adminPanelModal"));
+
+      $("adminOpen").onclick = (e) => {
+        e.preventDefault();
+        $("adminPass").value = "";
+        loginModal.show();
       };
 
-      
+      $("btnAdminLogin").onclick = () => {
+        const pass = $("adminPass").value;
+        if (verifyAdmin(pass)){
+          loginModal.hide();
+          updateAdminPreview();
+          panelModal.show();
+          showToast("Admin unlocked", "You can now edit values and download CSVs.", "good");
+        } else {
+          showToast("Wrong password", "Password is incorrect for this minute.", "bad");
+        }
+      };
 
-     
-            // Make sure UI shows the default year
+      // Admin panel events
+      ["adminMember","adminType","adminMonth","adminAmount","adminNote"].forEach(id => {
+        $(id).addEventListener("input", updateAdminPreview);
+        $(id).addEventListener("change", updateAdminPreview);
+      });
+
+      $("btnApplyChange").onclick = applyAdminChange;
+      $("btnDownloadCsv").onclick = downloadCSVs;
+      $("btnDiscardChanges").onclick = discardAdminChanges;
+      
+      // Make sure UI shows the default year
 $("payments2026Btn").classList.add("active");
 $("payments2025Btn").classList.remove("active");
 
