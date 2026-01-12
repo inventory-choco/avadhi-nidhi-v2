@@ -1441,7 +1441,12 @@ function computeLoans() {
       const adminMember = $("adminMember");
       adminMember.innerHTML = "";
 
-      const names = [...paymentsRows.map(r => r.Name)].sort((a,b)=>String(a).localeCompare(String(b)));
+      // Filter out empty names or the "TOTAL" row
+      const names = [...paymentsCalcRows]
+        .map(r => r.Name)
+        .filter(n => n && n !== "TOTAL")
+        .sort((a,b)=>String(a).localeCompare(String(b)));
+
       for (const n of names){
         const opt = document.createElement("option");
         opt.value = n;
@@ -1453,6 +1458,7 @@ function computeLoans() {
         opt2.textContent = n;
         adminMember.appendChild(opt2);
       }
+      
 
       // Months in admin: union
       const adminMonth = $("adminMonth");
@@ -1481,22 +1487,25 @@ function computeLoans() {
         return;
       }
 
-      	const p = paymentsCalcRows.find(r => r.Name === name);
-      	const pCalc = paymentsComputedRows.find(r => r.Name === name);
-      	const l = loansComputedRows.find(r => r.Name === name);
+      // Source data from 2026 (Calculation) records
+      const p = paymentsCalcRows.find(r => r.Name === name);
+      const pCalc = paymentsComputedRows.find(r => r.Name === name);
+      const l = loansComputedRows.find(r => r.Name === name);
 
-      	// Get Month Number for individual calculation
+      // 1. Get Actual OB from CSV for this member
+      const ob = p ? safeNum(p.OB) : 0;
+
+      // 2. Calculate Expected Till Date based on your formula: 1400 + (MonthIndex * 100)
       let mIdx = 0;
       if (activeMonthKey) {
         const mName = activeMonthKey.split('-')[0];
         const mMap = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
         mIdx = mMap[mName] || 0;
       }
-      
-      // Expected = 1400 + (MonthNumber * 100)
       const expectedTill = 1400 + (mIdx * MONTHLY_CONTRIBUTION);
 
-      const paidTillMonths = p ? sumMonths(p, paymentsMonthKeys, activeMonthKey) : 0;
+      // 3. Calculate Paid Till Date (Actual OB + 2026 payments)
+      const paidTillMonths = p ? sumMonths(p, paymentsCalcMonthKeys, activeMonthKey) : 0;
       const paidTill = ob + paidTillMonths;
       const outstanding = expectedTill - paidTill;
 
@@ -1536,16 +1545,16 @@ function computeLoans() {
         <div class="row g-2 mt-3">
           <div class="col-md-4">
             <div class="glass2 p-3">
-              <div class="muted">Expected till date (incl. OB)</div>
+              <div class="muted">Expected till date (Fixed Formula)</div>
               <div class="fw-bold mt-1">${CURRENCY} ${toMoney(expectedTill,2)}</div>
-              <div class="help">OB: ${CURRENCY} ${toMoney(ob,2)}</div>
+              <div class="help">Formula: 1400 + (${mIdx} * 100)</div>
             </div>
           </div>
           <div class="col-md-4">
             <div class="glass2 p-3">
               <div class="muted">Paid till date (incl. OB)</div>
               <div class="fw-bold mt-1">${CURRENCY} ${toMoney(paidTill,2)}</div>
-              <div class="help">Calculated total paid (all months): ${CURRENCY} ${toMoney(totalPaidCalc,2)}</div>
+              <div class="help">Individual OB: ${CURRENCY} ${toMoney(ob,2)}</div>
             </div>
           </div>
           <div class="col-md-4">
@@ -1558,7 +1567,7 @@ function computeLoans() {
         </div>
       `;
 
-      // NEW: enable snapshot button for selected member
+      // Enable snapshot button
       snap.style.opacity = "1";
       snap.style.pointerEvents = "auto";
       snap.dataset.member = name;
