@@ -214,6 +214,7 @@
       padding: 12px 12px;
     }
 
+
     .admin-link{
       font-size: .86rem;
       color: rgba(255,255,255,.65);
@@ -352,7 +353,7 @@
 
         <a class="btn btn-primary" href="LoanRequestForm.html">Request for a Loan</a>
 
-        <a href="#" class="admin-link ms-2" id="adminOpen">⚙ Admin</a>
+        <a href="#" class="admin-link ms-2" id="adminOpen" title="Admin (editing only available for 2026)">⚙ Admin</a>
       </div>
     </div>
 
@@ -562,7 +563,14 @@
               Then upload/commit them to GitHub using GitHub Desktop (your existing workflow).
             </div>
           </div>
-
+          <div id="adminReadOnlyWarning" class="warn-box mb-3" style="display:none; border-color: rgba(245,197,66,.55); background: rgba(245,197,66,.18);">
+            <div class="fw-bold mb-1">Read-Only Mode Active</div>
+            <div class="help">
+              You are currently viewing <strong>2025</strong> data (historical year).<br>
+              Editing and downloading are disabled to prevent accidental changes.<br>
+              Switch to <strong>Payments 2026</strong> in the main dashboard to edit.
+            </div>
+          </div>
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Member</label>
@@ -1750,6 +1758,45 @@ function switchPaymentsYear(year){
   determineActiveMonth(); // safe to call, doesn't affect calcs
 
   showToast("View switched", `Now showing Payments ${year}`, "info");
+// NEW: Protect admin panel when viewing historical year
+const isReadOnly = (year === 2025);
+
+// Disable/enable admin inputs & buttons
+const adminInputs = document.querySelectorAll('#adminPanelModal input, #adminPanelModal select');
+adminInputs.forEach(el => {
+  el.disabled = isReadOnly;
+  el.style.opacity = isReadOnly ? '0.6' : '1';
+// Visual hint on admin link
+const adminLink = $('adminOpen');
+if (adminLink) {
+  adminLink.style.opacity = isReadOnly ? '0.5' : '1';
+  adminLink.style.pointerEvents = isReadOnly ? 'none' : 'auto';
+  adminLink.title = isReadOnly 
+    ? "Admin editing disabled in historical view (2025)" 
+    : "Admin (editing only available for 2026)";
+}
+});
+
+const adminButtons = document.querySelectorAll('#adminPanelModal .btn');
+adminButtons.forEach(btn => {
+  btn.disabled = isReadOnly;
+  btn.style.opacity = isReadOnly ? '0.6' : '1';
+});
+
+// Show/hide read-only warning in admin modal
+const warningEl = $('adminReadOnlyWarning');
+if (warningEl) {
+  warningEl.style.display = isReadOnly ? 'block' : 'none';
+}
+
+// Optional: if admin panel is open, force update UI
+if (bootstrap.Modal.getInstance($('#adminPanelModal'))) {
+  // Small delay to ensure modal is visible
+  setTimeout(() => {
+    document.querySelectorAll('#adminPanelModal .form-control, #adminPanelModal .form-select')
+      .forEach(el => el.disabled = isReadOnly);
+  }, 100);
+}
 }
 
     document.addEventListener("DOMContentLoaded", () => {
