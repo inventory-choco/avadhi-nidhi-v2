@@ -1238,110 +1238,105 @@ function computeLoans() {
       return String(a.Name || "").localeCompare(String(b.Name || ""), undefined, { sensitivity: "base" });
     }
 
-    function renderPaymentsTable(){
-      const table = $("paymentsTable");
-      table.innerHTML = "";
+    function renderPaymentsTable() {
+  const table = $("paymentsTable");
+  table.innerHTML = "";
 
-      if (!paymentsRows.length){
-        table.innerHTML = `<tbody><tr><td class="p-3 muted">No payments data found.</td></tr></tbody>`;
-        return;
+  if (!paymentsDisplayRows.length) {
+    table.innerHTML = `<tbody><tr><td class="p-3 muted">No payments data found for selected year.</td></tr></tbody>`;
+    return;
+  }
+
+  // Build headers
+  const baseCols = ["SN", "Name", "OB", "Total Paid"];
+  const monthCols = paymentsDisplayMonthKeys;
+  const headers = [...baseCols, ...monthCols];
+
+  const thead = document.createElement("thead");
+  const trh = document.createElement("tr");
+  for (const h of headers) {
+    const th = document.createElement("th");
+    th.textContent = h;
+    if (h === "Name") th.classList.add("sticky-name");
+    if (h === activeMonthKey) th.classList.add("month-highlight");
+    trh.appendChild(th);
+  }
+  thead.appendChild(trh);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  // Totals
+  const totals = {};
+  for (const h of headers) totals[h] = 0;
+
+  // Rows (with sorting)
+  const rows = [...paymentsDisplayRows];
+  rows.sort((a, b) => {
+    const primary = paySort.key === "SN" ? cmpSN(a, b) : cmpName(a, b);
+    if (primary !== 0) return primary * paySort.dir;
+    // tie-breaker
+    const secondary = paySort.key === "SN" ? cmpName(a, b) : cmpSN(a, b);
+    return secondary;
+  });
+
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    for (const h of headers) {
+      const td = document.createElement(h === "Name" ? "th" : "td");
+      if (h === "Name") td.classList.add("sticky-name");
+      let val = r[h];
+
+      if (h === "Total Paid") {
+        const found = paymentsComputedRows.find(x => x.Name === r.Name);
+        const calc = found ? found.__calcTotalPaid : safeNum(r["Total Paid"]);
+        val = calc.toFixed(2);
+        totals[h] += calc;
+      } else if (h === "OB") {
+        const ob = safeNum(r.OB);
+        val = ob.toFixed(2);
+        totals[h] += ob;
+      } else if (isMonthKey(h)) {
+        const x = safeNum(r[h]);
+        val = x ? x.toFixed(0) : "";
+        totals[h] += x;
+      } else if (h === "SN") {
+        val = r.SN || "";
+      } else if (h === "Name") {
+        val = r.Name || "";
       }
 
-      // Build headers
-      const baseCols = ["SN", "Name", "OB", "Total Paid"];
-      const monthCols = paymentsMonthKeys;
-      const headers = [...baseCols, ...monthCols];
-
-      const thead = document.createElement("thead");
-      const trh = document.createElement("tr");
-      for (const h of headers){
-        const th = document.createElement("th");
-        th.textContent = h;
-        if (h === "Name") th.classList.add("sticky-name");
-        if (h === activeMonthKey) th.classList.add("month-highlight");
-        trh.appendChild(th);
-      }
-      thead.appendChild(trh);
-      table.appendChild(thead);
-
-      const tbody = document.createElement("tbody");
-
-      // Totals
-      const totals = {};
-      for (const h of headers) totals[h] = 0;
-
-      // rows (NEW: sorting)
-      const rows = [...paymentsRows];
-      rows.sort((a,b) => {
-        const primary = paySort.key === "SN" ? cmpSN(a,b) : cmpName(a,b);
-        if (primary !== 0) return primary * paySort.dir;
-        // tie-breaker
-        const secondary = paySort.key === "SN" ? cmpName(a,b) : cmpSN(a,b);
-        return secondary;
-      });
-
-      for (const r of rows){
-        const tr = document.createElement("tr");
-
-        for (const h of headers){
-          const td = document.createElement(h === "Name" ? "th" : "td");
-          if (h === "Name") td.classList.add("sticky-name");
-
-          let val = r[h];
-
-          // Show computed Total Paid (we still show CSV value, but computed is used for admin/export)
-          if (h === "Total Paid"){
-            const found = paymentsComputedRows.find(x => x.Name === r.Name);
-            const calc = found ? found.__calcTotalPaid : safeNum(r["Total Paid"]);
-            val = calc.toFixed(2);
-            totals[h] += calc;
-          } else if (h === "OB"){
-            const ob = safeNum(r.OB);
-            val = ob.toFixed(2);
-            totals[h] += ob;
-          } else if (isMonthKey(h)){
-            const x = safeNum(r[h]);
-            val = x ? x.toFixed(0) : "";
-            totals[h] += x;
-          } else if (h === "SN"){
-            val = r.SN || "";
-          } else if (h === "Name"){
-            val = r.Name || "";
-          }
-
-          td.textContent = val ?? "";
-          if (h === activeMonthKey) td.classList.add("month-highlight");
-          tr.appendChild(td);
-        }
-
-        tbody.appendChild(tr);
-      }
-
-      // totals row
-      const tfoot = document.createElement("tfoot");
-      const trf = document.createElement("tr");
-      for (const h of headers){
-        const td = document.createElement(h === "Name" ? "th" : "td");
-        if (h === "Name") {
-          td.classList.add("sticky-name");
-          td.textContent = "TOTAL";
-        } else if (h === "SN"){
-          td.textContent = "";
-        } else if (h === "Total Paid" || h === "OB"){
-          td.textContent = totals[h].toFixed(2);
-        } else if (isMonthKey(h)){
-          td.textContent = totals[h] ? totals[h].toFixed(0) : "";
-        } else {
-          td.textContent = "";
-        }
-        if (h === activeMonthKey) td.classList.add("month-highlight");
-        trf.appendChild(td);
-      }
-      tfoot.appendChild(trf);
-
-      table.appendChild(tbody);
-      table.appendChild(tfoot);
+      td.textContent = val ?? "";
+      if (h === activeMonthKey) td.classList.add("month-highlight");
+      tr.appendChild(td);
     }
+    tbody.appendChild(tr);
+  }
+
+  // Totals row
+  const tfoot = document.createElement("tfoot");
+  const trf = document.createElement("tr");
+  for (const h of headers) {
+    const td = document.createElement(h === "Name" ? "th" : "td");
+    if (h === "Name") {
+      td.classList.add("sticky-name");
+      td.textContent = "TOTAL";
+    } else if (h === "SN") {
+      td.textContent = "";
+    } else if (h === "Total Paid" || h === "OB") {
+      td.textContent = totals[h].toFixed(2);
+    } else if (isMonthKey(h)) {
+      td.textContent = totals[h] ? totals[h].toFixed(0) : "";
+    } else {
+      td.textContent = "";
+    }
+    if (h === activeMonthKey) td.classList.add("month-highlight");
+    trf.appendChild(td);
+  }
+  tfoot.appendChild(trf);
+  table.appendChild(tbody);
+  table.appendChild(tfoot);
+}
 
     function renderLoansTable(){
       const table = $("loansTable");
