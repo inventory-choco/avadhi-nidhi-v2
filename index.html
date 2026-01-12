@@ -1429,102 +1429,92 @@ function populateMemberSelects(){
       renderMemberCard(select.value);
     }
 
-    function renderMemberCard(name){
-      const card = $("memberCard");
-      const snap = $("btnSnapshot");
+    function renderMemberCard(name) {
+  const card = $("memberCard");
+  const snap = $("btnSnapshot");
 
-      if (!name){
-        card.innerHTML = `<div class="muted">Pick a member to see details.</div>`;
-        snap.style.opacity = ".45";
-        snap.style.pointerEvents = "none";
-        snap.dataset.member = "";
-        return;
-      }
+  if (!name) {
+    card.innerHTML = `<div class="muted">Pick a member to see details.</div>`;
+    snap.style.opacity = ".45";
+    snap.style.pointerEvents = "none";
+    snap.dataset.member = "";
+    return;
+  }
 
-      const p = paymentsRows.find(r => r.Name === name);
-      const pCalc = paymentsComputedRows.find(r => r.Name === name);
-      const l = loansComputedRows.find(r => r.Name === name);
+  // Use calculation source (always 2026)
+  const p = paymentsCalcRows.find(r => r.Name === name);
+  const pCalc = paymentsComputedRows.find(r => r.Name === name);
+  const l = loansComputedRows.find(r => r.Name === name);
 
-      const ob = p ? safeNum(p.OB) : 0;
-      const monthsTillCount = countMonthsTill(activeMonthKey, paymentsMonthKeys);
-      const expectedTill = (monthsTillCount * MONTHLY_CONTRIBUTION) + ob;
+  const ob = p ? safeNum(p.OB) : 0;
+  const monthsTillCount = countMonthsTill(activeMonthKey, paymentsCalcMonthKeys);
+  const expectedTill = (monthsTillCount * MONTHLY_CONTRIBUTION) + ob;
 
-      const paidTillMonths = p ? sumMonths(p, paymentsMonthKeys, activeMonthKey) : 0;
-      const paidTill = ob + paidTillMonths;
-      const outstanding = expectedTill - paidTill;
+  const paidTillMonths = p ? sumMonths(p, paymentsCalcMonthKeys, activeMonthKey) : 0;
+  const paidTill = ob + paidTillMonths;
+  const outstanding = expectedTill - paidTill;
 
-      const currentMonthPaid = p ? safeNum(p[activeMonthKey]) : 0;
+  const currentMonthPaid = p ? safeNum(p[activeMonthKey]) : 0;
 
-      // Loan summary
-      const hasLoan = l && l["Loan Amount"] !== "";
-      const loanAmt = hasLoan ? safeNum(l["Loan Amount"]) : 0;
-      const loanRepaid = hasLoan ? safeNum(l["Repaid"]) : 0;
-      const loanBalance = hasLoan ? safeNum(l["Balance"]) : 0;
+  // Loan summary
+  const hasLoan = l && l["Loan Amount"] !== "";
+  const loanAmt = hasLoan ? safeNum(l["Loan Amount"]) : 0;
+  const loanRepaid = hasLoan ? safeNum(l["Repaid"]) : 0;
+  const loanBalance = hasLoan ? safeNum(l["Balance"]) : 0;
 
-      let loanBadge = `<span class="badge-soft"><span class="dot"></span>No Loan</span>`;
-      if (hasLoan){
-        const s = l.__rawStatus || "Active";
-        if (s === "On Time" || s === "Cleared") loanBadge = `<span class="badge-soft good"><span class="dot good"></span>${s}</span>`;
-        else if (s === "Not Yet Due") loanBadge = `<span class="badge-soft"><span class="dot warn"></span>${s}</span>`;
-        else loanBadge = `<span class="badge-soft bad"><span class="dot bad"></span>${s}</span>`;
-      }
+  let loanBadge = `<span class="badge-soft"><span class="dot"></span>No Loan</span>`;
+  if (hasLoan) {
+    const s = l.__rawStatus || "Active";
+    if (s === "On Time" || s === "Cleared") loanBadge = `<span class="badge-soft good"><span class="dot good"></span>${s}</span>`;
+    else if (s === "Not Yet Due") loanBadge = `<span class="badge-soft"><span class="dot warn"></span>${s}</span>`;
+    else loanBadge = `<span class="badge-soft bad"><span class="dot bad"></span>${s}</span>`;
+  }
 
-      const totalPaidCalc = pCalc ? pCalc.__calcTotalPaid : (p ? safeNum(p["Total Paid"]) : 0);
+  const totalPaidCalc = pCalc ? pCalc.__calcTotalPaid : (p ? safeNum(p["Total Paid"]) : 0);
+  const outClass = outstanding <= 0 ? "good" : outstanding < MONTHLY_CONTRIBUTION ? "warn" : "bad";
+  const outBadge = `<span class="badge-soft ${outClass}"><span class="dot ${outClass}"></span>Outstanding: ${CURRENCY} ${toMoney(outstanding,2)}</span>`;
 
-      const outClass = outstanding <= 0 ? "good" : outstanding < MONTHLY_CONTRIBUTION ? "warn" : "bad";
-      const outBadge = `<span class="badge-soft ${outClass}"><span class="dot ${outClass}"></span>Outstanding: ${CURRENCY} ${toMoney(outstanding,2)}</span>`;
-
-      card.innerHTML = `
-        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
-          <div>
-            <div class="fw-bold" style="font-size:1.05rem;">${name}</div>
-            <div class="help">Active month: <strong>${activeMonthKey || "—"}</strong> • Current month paid: <strong>${CURRENCY} ${toMoney(currentMonthPaid,0)}</strong></div>
-          </div>
-          <div class="d-flex gap-2 flex-wrap">
-            ${outBadge}
-            ${loanBadge}
-          </div>
+  card.innerHTML = `
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+      <div>
+        <div class="fw-bold" style="font-size:1.05rem;">${name}</div>
+        <div class="help">Active month: <strong>${activeMonthKey || "—"}</strong> • Current month paid: <strong>${CURRENCY} ${toMoney(currentMonthPaid,0)}</strong></div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        ${outBadge}
+        ${loanBadge}
+      </div>
+    </div>
+    <div class="row g-2 mt-3">
+      <div class="col-md-4">
+        <div class="glass2 p-3">
+          <div class="muted">Expected till date (incl. OB)</div>
+          <div class="fw-bold mt-1">${CURRENCY} ${toMoney(expectedTill,2)}</div>
+          <div class="help">OB: ${CURRENCY} ${toMoney(ob,2)}</div>
         </div>
-
-        <div class="row g-2 mt-3">
-          <div class="col-md-4">
-            <div class="glass2 p-3">
-              <div class="muted">Expected till date (incl. OB)</div>
-              <div class="fw-bold mt-1">${CURRENCY} ${toMoney(expectedTill,2)}</div>
-              <div class="help">OB: ${CURRENCY} ${toMoney(ob,2)}</div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="glass2 p-3">
-              <div class="muted">Paid till date (incl. OB)</div>
-              <div class="fw-bold mt-1">${CURRENCY} ${toMoney(paidTill,2)}</div>
-              <div class="help">Calculated total paid (all months): ${CURRENCY} ${toMoney(totalPaidCalc,2)}</div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="glass2 p-3">
-              <div class="muted">Loan summary</div>
-              <div class="fw-bold mt-1">${hasLoan ? `${CURRENCY} ${toMoney(loanBalance,2)} balance` : "—"}</div>
-              <div class="help">${hasLoan ? `Loan: ${CURRENCY} ${toMoney(loanAmt,2)} • Repaid: ${CURRENCY} ${toMoney(loanRepaid,2)}` : "No active loan record"}</div>
-            </div>
-          </div>
+      </div>
+      <div class="col-md-4">
+        <div class="glass2 p-3">
+          <div class="muted">Paid till date (incl. OB)</div>
+          <div class="fw-bold mt-1">${CURRENCY} ${toMoney(paidTill,2)}</div>
+          <div class="help">Calculated total paid (all months): ${CURRENCY} ${toMoney(totalPaidCalc,2)}</div>
         </div>
-      `;
+      </div>
+      <div class="col-md-4">
+        <div class="glass2 p-3">
+          <div class="muted">Loan summary</div>
+          <div class="fw-bold mt-1">${hasLoan ? `${CURRENCY} ${toMoney(loanBalance,2)} balance` : "—"}</div>
+          <div class="help">${hasLoan ? `Loan: ${CURRENCY} ${toMoney(loanAmt,2)} • Repaid: ${CURRENCY} ${toMoney(loanRepaid,2)}` : "No active loan record"}</div>
+        </div>
+      </div>
+    </div>
+  `;
 
-      // NEW: enable snapshot button for selected member
-      snap.style.opacity = "1";
-      snap.style.pointerEvents = "auto";
-      snap.dataset.member = name;
-    }
-
-    // NEW: snapshot feature (PC + mobile)
-    function sanitizeFilePart(s){
-      return String(s || "")
-        .trim()
-        .replace(/\s+/g, "_")
-        .replace(/[\/\\:*?"<>|]/g, "")   // illegal filename chars
-        .slice(0, 80);
-    }
+  // Enable snapshot button
+  snap.style.opacity = "1";
+  snap.style.pointerEvents = "auto";
+  snap.dataset.member = name;
+}
 
     function pad2(n){ return String(n).padStart(2, "0"); }
 
