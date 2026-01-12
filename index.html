@@ -1544,8 +1544,9 @@ function populateMemberSelects(){
     }
 
     function getMemberRowPayments(name){
-      return paymentsRows.find(r => r.Name === name);
-    }
+  // FIXED: Use the calculation source (always 2026) instead of the undefined global
+  return paymentsCalcRows.find(r => r.Name === name);
+}
 
     function getMemberRowLoans(name){
       return loanRows.find(r => r.Name === name);
@@ -1578,12 +1579,54 @@ function populateMemberSelects(){
         return;
       }
 
-      if (type === "payment"){
+            if (type === "payment"){
         let row = getMemberRowPayments(name);
         if (!row){
           showToast("Admin", "Member not found in payments.csv.", "bad");
           return;
         }
+
+        // FIXED: Ensure the column exists in the 2026 dataset
+        ensureMonthColumn(paymentsCalcRows, mkey);
+        
+        // FIXED: Add key to 2026 month keys if it doesn't exist
+        if (!paymentsCalcMonthKeys.includes(mkey)) {
+          paymentsCalcMonthKeys = sortMonthKeys([...paymentsCalcMonthKeys, mkey]);
+          allMonthKeys = sortMonthKeys([...allMonthKeys, mkey]);
+        }
+
+        row[mkey] = amt ? String(amt) : "";
+
+        // keep Total Paid consistent
+        const ob = safeNum(row.OB);
+        // FIXED: Use paymentsCalcMonthKeys for sum calculation
+        const totalMonths = sumMonths(row, paymentsCalcMonthKeys, null);
+        row["Total Paid"] = (ob + totalMonths).toFixed(2);
+
+        setUnsaved(true);
+        showToast("Applied", `${name} • Payment • ${mkey} = ${amt}`, "good");
+      }
+// ===============================
+// YEAR-SEPARATED PAYMENTS STATE
+// ===============================
+
+// ---- CALCULATION SOURCE (LOCKED) ----
+// 2026 is the single source of truth
+let payments2026Rows = [];
+let payments2026MonthKeys = [];
+
+// ---- DISPLAY-ONLY DATASETS ----
+let payments2025Rows = [];
+let payments2025MonthKeys = [];
+
+// ---- ACTIVE DISPLAY POINTERS ----
+// Used ONLY for table rendering
+let paymentsDisplayRows = [];
+let paymentsDisplayMonthKeys = [];
+
+// ---- UI STATE ----
+let activePaymentsYear = 2026; // default year
+
 
         ensureMonthColumn(paymentsRows, mkey);
         if (!paymentsMonthKeys.includes(mkey)) {
@@ -1665,12 +1708,15 @@ function populateMemberSelects(){
       for (const k of paymentsMonthKeys) ensureMonthColumn(paymentsRows, k);
       for (const k of loansMonthKeys) ensureMonthColumn(loanRows, k);
 
-      const paymentsBase = ["SN","Name","Total Paid","OB"];
-      const paymentsHeaders = [...paymentsBase, ...paymentsMonthKeys];
-      const paymentsOut = paymentsRows
-        .slice()
-        .sort((a,b) => String(a.Name).localeCompare(String(b.Name)))
-        .map(r => pickColumns(r, paymentsHeaders));
+        const paymentsBase = ["SN","Name","Total Paid","OB"];
+  // FIXED: Use paymentsCalcMonthKeys (2026) to ensure we download the correct columns
+  const paymentsHeaders = [...paymentsBase, ...paymentsCalcMonthKeys];
+  
+  // FIXED: Use paymentsCalcRows (2026) to ensure we download the correct data
+  const paymentsOut = paymentsCalcRows
+    .slice()
+    .sort((a,b) => String(a.Name).localeCompare(String(b.Name)))
+    .map(r => pickColumns(r, paymentsHeaders));
 
       const loansBase = ["SN","Name","LOAN ISSUE DATE","LOAN AMOUNT","AGREED TO REPAY IN (MONTHS)"];
       const loansHeaders = [...loansBase, ...loansMonthKeys];
