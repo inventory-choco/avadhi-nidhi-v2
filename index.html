@@ -444,6 +444,10 @@
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div>
           <h2 class="mb-1">Payments</h2>
+<div id="readOnlyNotice" class="badge-soft warn mb-2" style="display:none;">
+  <span class="dot warn"></span> Viewing Historical Data (Read-Only)
+</div>
+
 <div class="toggle-container" style="margin-bottom: 10px;">
   <button id="payments2026Btn" class="toggle-btn active"
           onclick="switchPaymentsYear(2026)">
@@ -890,9 +894,16 @@ function completedMonthsBetween(fromDate, toDate){
 	paymentsRows          = paymentsCalcRows; 
        paymentsMonthKeys     = paymentsCalcMonthKeys;
 
-       // Initial display = current year (2026)
-       paymentsDisplayRows      = payments2026Rows;
-       paymentsDisplayMonthKeys = payments2026MonthKeys;
+      // ──────────────────────────────────────────────────────────────
+       // DECIDE WHAT TO DISPLAY (Requirement 5.3)
+       // ──────────────────────────────────────────────────────────────
+       if (activePaymentsYear === 2025) {
+         paymentsDisplayRows      = payments2025Rows;
+         paymentsDisplayMonthKeys = payments2025MonthKeys;
+       } else {
+         paymentsDisplayRows      = payments2026Rows;
+         paymentsDisplayMonthKeys = payments2026MonthKeys;
+       }
         if (allMonthKeys.length === 0){
           warn(`No month columns detected in either CSV. Please use headers like "Jan-26".`);
         }
@@ -1242,6 +1253,23 @@ function computeLoans() {
     }
 
     function renderPaymentsTable() {
+// Handle Read-Only Notice and Admin Restrictions
+  const isReadOnly = (activePaymentsYear !== 2026);
+  const notice = $("readOnlyNotice");
+  if (notice) notice.style.display = isReadOnly ? "inline-flex" : "none";
+  
+  // Disable Admin button if in historical year
+  const adminBtn = $("adminOpen");
+  if (isReadOnly) {
+    adminBtn.style.opacity = "0.5";
+    adminBtn.style.pointerEvents = "none";
+    adminBtn.title = "Admin disabled for historical years";
+  } else {
+    adminBtn.style.opacity = "1";
+    adminBtn.style.pointerEvents = "auto";
+    adminBtn.title = "";
+  }
+
   const table = $("paymentsTable");
   table.innerHTML = "";
 
