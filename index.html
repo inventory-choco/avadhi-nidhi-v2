@@ -1731,7 +1731,7 @@ function populateMemberSelects(){
     /***********************
      * EVENTS
      ***********************/
-function switchPaymentsYear(year){
+function switchPaymentsYear(year) {
   if (!PAYMENTS_FILES[year]) return;
 
   activePaymentsYear = year;
@@ -1754,51 +1754,54 @@ function switchPaymentsYear(year){
   // Re-render only the payments table
   renderPaymentsTable();
 
-  // Optional: update active month label if needed, but we keep it global
-  determineActiveMonth(); // safe to call, doesn't affect calcs
+  // Optional: update active month label
+  determineActiveMonth();
 
   showToast("View switched", `Now showing Payments ${year}`, "info");
-// NEW: Protect admin panel when viewing historical year
-const isReadOnly = (year === 2025);
 
-// Disable/enable admin inputs & buttons
-const adminInputs = document.querySelectorAll('#adminPanelModal input, #adminPanelModal select');
-adminInputs.forEach(el => {
-  el.disabled = isReadOnly;
-  el.style.opacity = isReadOnly ? '0.6' : '1';
-// Visual hint on admin link
-const adminLink = $('adminOpen');
-if (adminLink) {
-  adminLink.style.opacity = isReadOnly ? '0.5' : '1';
-  adminLink.style.pointerEvents = isReadOnly ? 'none' : 'auto';
-  adminLink.title = isReadOnly 
-    ? "Admin editing disabled in historical view (2025)" 
-    : "Admin (editing only available for 2026)";
+  // ──────────────────────────────────────────────────────────────
+  // Protect admin panel when viewing historical year
+  // ──────────────────────────────────────────────────────────────
+  const isReadOnly = (year === 2025);
+
+  // Disable/enable admin inputs & selects
+  const adminInputs = document.querySelectorAll('#adminPanelModal input, #adminPanelModal select');
+  adminInputs.forEach(el => {
+    el.disabled = isReadOnly;
+    el.style.opacity = isReadOnly ? '0.6' : '1';
+  });
+
+  // Disable/enable admin buttons
+  const adminButtons = document.querySelectorAll('#adminPanelModal .btn');
+  adminButtons.forEach(btn => {
+    btn.disabled = isReadOnly;
+    btn.style.opacity = isReadOnly ? '0.6' : '1';
+  });
+
+  // Show/hide read-only warning inside admin modal
+  const warningEl = $('adminReadOnlyWarning');
+  if (warningEl) {
+    warningEl.style.display = isReadOnly ? 'block' : 'none';
+  }
+
+  // Visual hint + disable admin link in top bar
+  const adminLink = $('adminOpen');
+  if (adminLink) {
+    adminLink.style.opacity = isReadOnly ? '0.5' : '1';
+    adminLink.style.pointerEvents = isReadOnly ? 'none' : 'auto';
+    adminLink.title = isReadOnly
+      ? "Admin editing disabled in historical view (2025)"
+      : "Admin (editing only available for 2026)";
+  }
+
+  // If admin modal is already open, force-disable inputs again
+  if (bootstrap.Modal.getInstance($('#adminPanelModal'))) {
+    setTimeout(() => {
+      document.querySelectorAll('#adminPanelModal .form-control, #adminPanelModal .form-select')
+        .forEach(el => el.disabled = isReadOnly);
+    }, 100);
+  }
 }
-});
-
-const adminButtons = document.querySelectorAll('#adminPanelModal .btn');
-adminButtons.forEach(btn => {
-  btn.disabled = isReadOnly;
-  btn.style.opacity = isReadOnly ? '0.6' : '1';
-});
-
-// Show/hide read-only warning in admin modal
-const warningEl = $('adminReadOnlyWarning');
-if (warningEl) {
-  warningEl.style.display = isReadOnly ? 'block' : 'none';
-}
-
-// Optional: if admin panel is open, force update UI
-if (bootstrap.Modal.getInstance($('#adminPanelModal'))) {
-  // Small delay to ensure modal is visible
-  setTimeout(() => {
-    document.querySelectorAll('#adminPanelModal .form-control, #adminPanelModal .form-select')
-      .forEach(el => el.disabled = isReadOnly);
-  }, 100);
-}
-}
-
     document.addEventListener("DOMContentLoaded", () => {
       // Reload CSV: NEW cache-buster to force newest data (Chrome cache fix)
       $("btnReload").onclick = () => { cacheBuster = Date.now(); loadAll(); };
