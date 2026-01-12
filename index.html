@@ -1145,14 +1145,18 @@ function computeLoans() {
       : 0;
 
   // 1. Calculate the actual sum of the OB column from your CSV
-  let totalOB = 0;
-  for (const r of paymentsCalcRows) {
-    totalOB += safeNum(r.OB);
+  // 1. Determine the month number (Jan=1, Feb=2, etc.)
+  let monthIndex = 0;
+  if (activeMonthKey) {
+    const monthName = activeMonthKey.split('-')[0]; // Gets "Jan" from "Jan-26"
+    const monthMap = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+    monthIndex = monthMap[monthName] || 0;
   }
 
-  // 2. Calculate Expected Till Date: 
-  // Total OB + (Number of months elapsed * Number of members * 100)
-  let expectedTill = totalOB + (totalMonthsTill * members * MONTHLY_CONTRIBUTION);
+  // 2. Calculate Expected Till Date using your formula:
+  // (1400 + (MonthNumber * 100)) * Number of Members
+  const expectedPerMember = 1400 + (monthIndex * MONTHLY_CONTRIBUTION);
+  let expectedTill = expectedPerMember * members;
 
   // Expected this month
   const expectedMonth = members * MONTHLY_CONTRIBUTION;
@@ -1481,10 +1485,16 @@ function computeLoans() {
       	const pCalc = paymentsComputedRows.find(r => r.Name === name);
       	const l = loansComputedRows.find(r => r.Name === name);
 
-      	const ob = p ? safeNum(p.OB) : 0;
-      // Use paymentsCalcMonthKeys to ensure we are calculating based on 2026 schedule
-      const monthsTillCount = countMonthsTill(activeMonthKey, paymentsCalcMonthKeys);
-      const expectedTill = (monthsTillCount * MONTHLY_CONTRIBUTION) + ob;
+      	// Get Month Number for individual calculation
+      let mIdx = 0;
+      if (activeMonthKey) {
+        const mName = activeMonthKey.split('-')[0];
+        const mMap = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+        mIdx = mMap[mName] || 0;
+      }
+      
+      // Expected = 1400 + (MonthNumber * 100)
+      const expectedTill = 1400 + (mIdx * MONTHLY_CONTRIBUTION);
 
       const paidTillMonths = p ? sumMonths(p, paymentsMonthKeys, activeMonthKey) : 0;
       const paidTill = ob + paidTillMonths;
