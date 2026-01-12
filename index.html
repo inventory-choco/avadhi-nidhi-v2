@@ -1452,12 +1452,12 @@ function populateMemberSelects(){
 
     renderMemberCard
 
-    /    function sanitizeFilePart(s){
-      return String(s || "")
-        .trim()
-        .replace(/\s+/g, "_")           // Replace spaces with underscores
-        .replace(/[^a-z0-9_]/gi, "_")   // Replace any special char with underscore
-        .slice(0, 80);
+       function sanitizeFilePart(s){
+      // Regex-free version to prevent syntax errors
+      let out = String(s || "").trim();
+      // Simply replace spaces with underscores
+      out = out.split(" ").join("_");
+      return out.substring(0, 80);
     }
 
     function pad2(n){ return String(n).padStart(2, "0"); }
