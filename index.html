@@ -1144,11 +1144,15 @@ function computeLoans() {
       ? countMonthsTill(activeMonthKey, paymentsCalcMonthKeys)
       : 0;
 
-  // Business rule:
-  // Expected = (Members × Months × 100) + (Members × OB 400)
-  let expectedTill =
-    (members * totalMonthsTill * MONTHLY_CONTRIBUTION) +
-    (members * 400);
+  // 1. Calculate the actual sum of the OB column from your CSV
+  let totalOB = 0;
+  for (const r of paymentsCalcRows) {
+    totalOB += safeNum(r.OB);
+  }
+
+  // 2. Calculate Expected Till Date: 
+  // Total OB + (Number of months elapsed * Number of members * 100)
+  let expectedTill = totalOB + (totalMonthsTill * members * MONTHLY_CONTRIBUTION);
 
   // Expected this month
   const expectedMonth = members * MONTHLY_CONTRIBUTION;
@@ -1478,8 +1482,9 @@ function computeLoans() {
       	const l = loansComputedRows.find(r => r.Name === name);
 
       	const ob = p ? safeNum(p.OB) : 0;
-      	const monthsTillCount = countMonthsTill(activeMonthKey, paymentsCalcMonthKeys);
-      	const expectedTill = (monthsTillCount * MONTHLY_CONTRIBUTION) + ob;
+      // Use paymentsCalcMonthKeys to ensure we are calculating based on 2026 schedule
+      const monthsTillCount = countMonthsTill(activeMonthKey, paymentsCalcMonthKeys);
+      const expectedTill = (monthsTillCount * MONTHLY_CONTRIBUTION) + ob;
 
       const paidTillMonths = p ? sumMonths(p, paymentsMonthKeys, activeMonthKey) : 0;
       const paidTill = ob + paidTillMonths;
