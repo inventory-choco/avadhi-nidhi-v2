@@ -1736,11 +1736,11 @@ function switchPaymentsYear(year) {
 
   activePaymentsYear = year;
 
-  // Update button active state
+  // Update active button styles
   $("payments2026Btn").classList.toggle("active", year === 2026);
   $("payments2025Btn").classList.toggle("active", year === 2025);
 
-  // Update display data (only affects table)
+  // Switch display data (only affects table)
   if (year === 2026) {
     paymentsDisplayRows = payments2026Rows;
     paymentsDisplayMonthKeys = payments2026MonthKeys;
@@ -1751,27 +1751,27 @@ function switchPaymentsYear(year) {
     $("yearModeBadge").style.display = "inline-flex";
   }
 
-  // Re-render only the payments table
+  // Re-render payments table only
   renderPaymentsTable();
 
-  // Optional: update active month label
+  // Refresh active month label
   determineActiveMonth();
 
   showToast("View switched", `Now showing Payments ${year}`, "info");
 
   // ──────────────────────────────────────────────────────────────
-  // Protect admin panel when viewing historical year
+  // Read-only protection for 2025
   // ──────────────────────────────────────────────────────────────
   const isReadOnly = (year === 2025);
 
-  // Disable/enable admin inputs & selects
+  // Disable inputs/selects in admin modal
   const adminInputs = document.querySelectorAll('#adminPanelModal input, #adminPanelModal select');
   adminInputs.forEach(el => {
     el.disabled = isReadOnly;
     el.style.opacity = isReadOnly ? '0.6' : '1';
   });
 
-  // Disable/enable admin buttons
+  // Disable buttons in admin modal
   const adminButtons = document.querySelectorAll('#adminPanelModal .btn');
   adminButtons.forEach(btn => {
     btn.disabled = isReadOnly;
@@ -1784,7 +1784,7 @@ function switchPaymentsYear(year) {
     warningEl.style.display = isReadOnly ? 'block' : 'none';
   }
 
-  // Visual hint + disable admin link in top bar
+  // Visual disable + tooltip for top admin link
   const adminLink = $('adminOpen');
   if (adminLink) {
     adminLink.style.opacity = isReadOnly ? '0.5' : '1';
@@ -1794,15 +1794,14 @@ function switchPaymentsYear(year) {
       : "Admin (editing only available for 2026)";
   }
 
-  // If admin modal is already open, force-disable inputs again
+  // If admin modal is already open, force-update disabled state
   if (bootstrap.Modal.getInstance($('#adminPanelModal'))) {
     setTimeout(() => {
       document.querySelectorAll('#adminPanelModal .form-control, #adminPanelModal .form-select')
         .forEach(el => el.disabled = isReadOnly);
     }, 100);
   }
-}
-    document.addEventListener("DOMContentLoaded", () => {
+}    document.addEventListener("DOMContentLoaded", () => {
       // Reload CSV: NEW cache-buster to force newest data (Chrome cache fix)
       $("btnReload").onclick = () => { cacheBuster = Date.now(); loadAll(); };
 
