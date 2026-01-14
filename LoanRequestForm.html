@@ -95,7 +95,7 @@ small{
   white-space:pre-line;
 }
 
-canvas{
+as{
   border:1px solid var(--border);
   border-radius:10px;
   margin-top:10px;
@@ -196,7 +196,7 @@ button.secondary{
 <div class="summary" id="summaryMessage"></div>
 
 <label>Signature</label>
-<canvas id="signatureCanvas"></canvas>
+<as id="signatureas"></as>
 <button type="button" class="secondary" onclick="clearSignature()">Clear Signature</button>
 
 <div class="button-row">
@@ -209,19 +209,66 @@ button.secondary{
 
 <script>
 const { jsPDF } = window.jspdf;
-let canvas,ctx,drawing=false;
+let as,ctx,drawing=false;
 
 /* ---------- Canvas ---------- */
-function initCanvas(){
-  const dpr=window.devicePixelRatio||1;
-  ctx.setTransform(1,0,0,1,0,0);
-  canvas.width=300*dpr;
-  canvas.height=150*dpr;
-  ctx.scale(dpr,dpr);
-  ctx.lineWidth=2;
-  ctx.lineCap="round";
-  ctx.strokeStyle="#000";
+<script>
+function getCanvasPos(canvas, clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY
+  };
 }
+</script>
+<script>
+function startDraw(e) {
+  e.preventDefault();
+  drawing = true;
+
+  const point = e.touches ? e.touches[0] : e;
+  const pos = getCanvasPos(canvas, point.clientX, point.clientY);
+
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
+}
+
+function draw(e) {
+  if (!drawing) return;
+  e.preventDefault();
+
+  const point = e.touches ? e.touches[0] : e;
+  const pos = getCanvasPos(canvas, point.clientX, point.clientY);
+
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+}
+
+function endDraw() {
+  drawing = false;
+}
+
+/* Mouse */
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mousemove", draw);
+canvas.addEventListener("mouseup", endDraw);
+canvas.addEventListener("mouseleave", endDraw);
+
+/* Touch */
+canvas.addEventListener("touchstart", startDraw, { passive: false });
+canvas.addEventListener("touchmove", draw, { passive: false });
+canvas.addEventListener("touchend", endDraw);
+canvas.addEventListener("touchcancel", endDraw);
+</script>
+@media (max-width: 600px) {
+  canvas {
+    height: 180px;
+  }
+}
+
 
 function clearSignature(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
