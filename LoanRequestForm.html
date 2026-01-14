@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Avadhi Nidhi Loan Request</title>
 
 <!-- jsPDF -->
@@ -39,16 +39,9 @@ form{
   box-shadow:var(--shadow);
 }
 
-h2{
-  text-align:center;
-  margin-bottom:10px;
-}
+h2{ text-align:center; margin-bottom:10px; }
 
-label{
-  display:block;
-  margin-top:14px;
-  font-weight:600;
-}
+label{ display:block; margin-top:14px; font-weight:600; }
 
 input,select{
   width:100%;
@@ -59,32 +52,14 @@ input,select{
   background:#0b1220;
   color:var(--text);
   font-size:14px;
+  box-sizing: border-box;
 }
 
-.input-row{
-  display:flex;
-  gap:10px;
-}
-
-.readonly{
-  background:#121a2f;
-}
-
-small{
-  color:var(--muted);
-  display:block;
-  margin-top:6px;
-}
-
-.error{
-  border-color:var(--error);
-}
-
-.error-message{
-  color:var(--error);
-  font-size:12px;
-  margin-top:4px;
-}
+.input-row{ display:flex; gap:10px; }
+.readonly{ background:#121a2f; }
+small{ color:var(--muted); display:block; margin-top:6px; }
+.error-message{ color:var(--error); font-size:12px; margin-top:4px; }
+.hidden{display:none}
 
 .summary{
   background:#0e1730;
@@ -95,15 +70,16 @@ small{
   white-space:pre-line;
 }
 
-as{
-  border:1px solid var(--border);
-  border-radius:10px;
-  margin-top:10px;
-  width:100%;
-  max-width:300px;
-  height:150px;
-  background:#fff;
-  touch-action:none;
+/* Fixed Canvas Styling */
+#signatureCanvas {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-top: 10px;
+  width: 100%;
+  height: 200px;
+  background: #fff;
+  touch-action: none; /* Prevents scrolling while drawing */
+  display: block;
 }
 
 .button-row{
@@ -124,12 +100,7 @@ button{
   cursor:pointer;
 }
 
-button.secondary{
-  background:#2a3558;
-  color:#fff;
-}
-
-.hidden{display:none}
+button.secondary{ background:#2a3558; color:#fff; }
 
 @media(max-width:600px){
   button{font-size:14px}
@@ -140,98 +111,110 @@ button.secondary{
 <body>
 
 <form id="loanForm">
-<h2>Avadhi Nidhi Loan Request</h2>
+  <h2>Avadhi Nidhi Loan Request</h2>
 
-<label>Request Date</label>
-<input id="requestDate" class="readonly" readonly>
+  <label>Request Date</label>
+  <input id="requestDate" class="readonly" readonly>
 
-<label>Applicant Name</label>
-<input id="name" required>
+  <label>Applicant Name</label>
+  <input id="applicantName" required placeholder="Enter full name">
 
-<label>Contact Number (UAE)</label>
-<div class="input-row">
-  <input value="+971" readonly style="max-width:70px">
-  <input id="contactUAE" maxlength="9">
-</div>
+  <label>Contact Number (UAE)</label>
+  <div class="input-row">
+    <input value="+971" readonly style="max-width:70px">
+    <input id="contactUAE" maxlength="9" placeholder="5x xxx xxxx">
+  </div>
 
-<label>Contact Number (India – optional)</label>
-<div class="input-row">
-  <input value="+91" readonly style="max-width:70px">
-  <input id="contactIndia" maxlength="10">
-</div>
+  <label>Loan Amount (Max AED 2000)</label>
+  <input type="number" id="amount" step="100" required>
+  <div id="amountError" class="error-message hidden">Maximum allowed amount is 2000</div>
 
-<label>Loan Amount (Max AED 2000)</label>
-<input type="number" id="amount" step="100" required>
-<div id="amountError" class="error-message hidden">Maximum allowed amount is 2000</div>
+  <label>Loan Required By Date</label>
+  <input type="date" id="loanDate" required>
 
-<label>Loan Required By Date</label>
-<input type="date" id="loanDate" required>
+  <label>Reason</label>
+  <select id="reason" required>
+    <option value="">Select</option>
+    <option>Annual Leave</option>
+    <option>Emergency Leave</option>
+    <option>Other</option>
+  </select>
 
-<label>Reason</label>
-<select id="reason" required>
-  <option value="">Select</option>
-  <option>Annual Leave</option>
-  <option>Emergency Leave</option>
-  <option>Other</option>
-</select>
+  <div id="otherReasonDiv" class="hidden">
+    <label>Please specify</label>
+    <input id="otherReason">
+  </div>
 
-<div id="otherReasonDiv" class="hidden">
-  <label>Please specify</label>
-  <input id="otherReason">
-</div>
+  <label>Repayment Months (Max 5)</label>
+  <input type="number" id="months" min="1" max="5" required>
 
-<label>Repayment Months (Max 5)</label>
-<input type="number" id="months" min="1" max="5" required>
+  <div id="emiPreview" class="summary hidden"></div>
 
-<div id="emiPreview" class="summary hidden"></div>
+  <label>Repayment Start Date</label>
+  <input type="date" id="repayStart" required>
 
-<label>Repayment Start Date</label>
-<input type="date" id="repayStart" required>
+  <label>Repayment End Date</label>
+  <input type="date" id="repayEnd" required>
 
-<label>Repayment End Date</label>
-<input type="date" id="repayEnd" required>
+  <small>ℹ Repayment starts after a 2-month grace period as per Avadhi Nidhi rules.</small>
 
-<small>ℹ Repayment starts after a 2-month grace period as per Avadhi Nidhi rules.</small>
+  <div class="summary" id="summaryMessage"></div>
 
-<div class="summary" id="summaryMessage"></div>
+  <label>Signature</label>
+  <canvas id="signatureCanvas"></canvas>
+  <button type="button" class="secondary" style="margin-top:10px" onclick="clearSignature()">Clear Signature</button>
 
-<label>Signature</label>
-<as id="signatureas"></as>
-<button type="button" class="secondary" onclick="clearSignature()">Clear Signature</button>
-
-<div class="button-row">
-  <button type="button" onclick="downloadPDF()">Download PDF</button>
-  <button type="button" class="secondary" onclick="shareOnWhatsApp()">Share on WhatsApp</button>
-  <button type="button" class="secondary" onclick="window.print()">Print</button>
-  <button type="reset" class="secondary">Clear</button>
-</div>
+  <div class="button-row">
+    <button type="button" onclick="downloadPDF()">Download PDF</button>
+    <button type="button" class="secondary" onclick="shareOnWhatsApp()">WhatsApp Share</button>
+    <button type="button" class="secondary" onclick="window.print()">Print</button>
+    <button type="reset" class="secondary" onclick="clearSignature()">Reset</button>
+  </div>
 </form>
 
 <script>
 const { jsPDF } = window.jspdf;
-let as,ctx,drawing=false;
+let canvas, ctx, drawing = false;
 
-/* ---------- Canvas ---------- */
-<script>
-function getCanvasPos(canvas, clientX, clientY) {
+// Initialize Elements
+const nameInput = document.getElementById("applicantName");
+const amountInput = document.getElementById("amount");
+const monthsInput = document.getElementById("months");
+const loanDateInput = document.getElementById("loanDate");
+const repayStart = document.getElementById("repayStart");
+const repayEnd = document.getElementById("repayEnd");
+const summaryMessage = document.getElementById("summaryMessage");
+const emiPreview = document.getElementById("emiPreview");
+
+/* ---------- Signature Logic ---------- */
+function initCanvas() {
+  canvas = document.getElementById("signatureCanvas");
+  ctx = canvas.getContext("2d");
+  
+  // Set actual drawing resolution
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
+  canvas.width = rect.width;
+  canvas.height = rect.height;
 
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+}
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
   return {
-    x: (clientX - rect.left) * scaleX,
-    y: (clientY - rect.top) * scaleY
+    x: clientX - rect.left,
+    y: clientY - rect.top
   };
 }
-</script>
-<script>
-function startDraw(e) {
+
+function startDrawing(e) {
   e.preventDefault();
   drawing = true;
-
-  const point = e.touches ? e.touches[0] : e;
-  const pos = getCanvasPos(canvas, point.clientX, point.clientY);
-
+  const pos = getPos(e);
   ctx.beginPath();
   ctx.moveTo(pos.x, pos.y);
 }
@@ -239,152 +222,121 @@ function startDraw(e) {
 function draw(e) {
   if (!drawing) return;
   e.preventDefault();
-
-  const point = e.touches ? e.touches[0] : e;
-  const pos = getCanvasPos(canvas, point.clientX, point.clientY);
-
+  const pos = getPos(e);
   ctx.lineTo(pos.x, pos.y);
   ctx.stroke();
 }
 
-function endDraw() {
+function stopDrawing() {
   drawing = false;
 }
 
-/* Mouse */
-canvas.addEventListener("mousedown", startDraw);
-canvas.addEventListener("mousemove", draw);
-canvas.addEventListener("mouseup", endDraw);
-canvas.addEventListener("mouseleave", endDraw);
-
-/* Touch */
-canvas.addEventListener("touchstart", startDraw, { passive: false });
-canvas.addEventListener("touchmove", draw, { passive: false });
-canvas.addEventListener("touchend", endDraw);
-canvas.addEventListener("touchcancel", endDraw);
-</script>
-@media (max-width: 600px) {
-  canvas {
-    height: 180px;
-  }
-
-
-
-function clearSignature(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  initCanvas();
+function clearSignature() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function hasSignature(){
-  const d=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-  return d.some(v=>v!==0);
+function hasSignature() {
+  const blank = document.createElement('canvas');
+  blank.width = canvas.width;
+  blank.height = canvas.height;
+  return canvas.toDataURL() !== blank.toDataURL();
 }
 
-/* ---------- Validation ---------- */
-function validateForm(){
-  if(!name.value) return alert("Name required"),false;
-  if(amount.value>2000) return alert("Amount exceeds limit"),false;
-  if(months.value>5) return alert("Maximum 5 months allowed"),false;
-  if(reason.value==="Other" && !otherReason.value) return alert("Specify reason"),false;
-  if(!hasSignature()) return alert("Signature required"),false;
-  return true;
-}
-
-/* ---------- Logic ---------- */
-function updateEMI(){
-  if(amount.value && months.value){
-    const emi=(amount.value/months.value).toFixed(2);
-    emiPreview.innerText=`Estimated EMI: AED ${emi} × ${months.value} months`;
+/* ---------- Form Logic ---------- */
+function updateEMI() {
+  if(amountInput.value && monthsInput.value){
+    const emi = (amountInput.value / monthsInput.value).toFixed(2);
+    emiPreview.innerText = `Estimated EMI: AED ${emi} × ${monthsInput.value} months`;
     emiPreview.classList.remove("hidden");
   }
 }
 
-function autoDates(){
-  if(!loanDate.value||!months.value) return;
-  const d=new Date(loanDate.value);
-  d.setMonth(d.getMonth()+2);
-  repayStart.valueAsDate=d;
-  const e=new Date(d);
-  e.setMonth(e.getMonth()+Number(months.value));
-  repayEnd.valueAsDate=e;
+function autoDates() {
+  if(!loanDateInput.value || !monthsInput.value) return;
+  const d = new Date(loanDateInput.value);
+  d.setMonth(d.getMonth() + 2); // 2-month grace
+  repayStart.valueAsDate = d;
+  
+  const e = new Date(d);
+  e.setMonth(e.getMonth() + Number(monthsInput.value));
+  repayEnd.valueAsDate = e;
 }
 
-function generateSummary(){
-  if(!name.value||!amount.value||!repayEnd.value) return;
-  summaryMessage.innerText=
+function generateSummary() {
+  const reason = document.getElementById("reason").value;
+  const other = document.getElementById("otherReason").value;
+  const finalReason = reason === "Other" ? other : reason;
+  
+  if(!nameInput.value || !amountInput.value) return;
+  
+  summaryMessage.innerText = 
 `Dear Avadhi Nidhi Committee,
 
-I request a loan of AED ${amount.value} for ${reason.value==="Other"?otherReason.value:reason.value}.
-I will repay the loan fully by ${repayEnd.value}.
+I request a loan of AED ${amountInput.value} for ${finalReason || '...'}.
+I will repay the loan fully by ${repayEnd.value || '...'}.
 
-Requested by
-${name.value}`;
+Requested by,
+${nameInput.value}`;
 }
 
-/* ---------- PDF ---------- */
-function buildPDF(){
-  const doc=new jsPDF();
-  doc.text("Avadhi Nidhi Loan Request",105,20,{align:"center"});
-  doc.text(summaryMessage.innerText,20,40);
-  doc.addImage(canvas.toDataURL(),"PNG",20,120,60,30);
-  return doc;
+function validateForm() {
+  if(!nameInput.value) { alert("Name required"); return false; }
+  if(amountInput.value > 2000) { alert("Max amount is 2000"); return false; }
+  if(!hasSignature()) { alert("Please provide a signature"); return false; }
+  return true;
 }
 
-function downloadPDF(){
+/* ---------- Outputs ---------- */
+function downloadPDF() {
   if(!validateForm()) return;
-  const d=new Date();
-  const file=`AvadhiNidhi_LoanRequest_${name.value}_${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}.pdf`;
-  buildPDF().save(file);
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text("Avadhi Nidhi Loan Request", 105, 20, {align:"center"});
+  doc.setFontSize(12);
+  doc.text(summaryMessage.innerText, 20, 40);
+  doc.text("Signature:", 20, 110);
+  doc.addImage(canvas.toDataURL("image/png"), 'PNG', 20, 115, 70, 30);
+  
+  const d = new Date();
+  doc.save(`LoanRequest_${nameInput.value}_${d.getTime()}.pdf`);
 }
 
-function shareOnWhatsApp(){
+function shareOnWhatsApp() {
   if(!validateForm()) return;
-  const d=new Date();
-  const file=`AvadhiNidhi_LoanRequest_${name.value}_${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}.pdf`;
-  const blob=buildPDF().output("blob");
-  if(navigator.share){
-    navigator.share({files:[new File([blob],file,{type:"application/pdf"})]});
-  }else{
-    window.open(`https://wa.me/?text=Loan request PDF: ${file}`);
-  }
+  const text = encodeURIComponent(`Avadhi Nidhi Loan Request\nName: ${nameInput.value}\nAmount: AED ${amountInput.value}\nRepay By: ${repayEnd.value}`);
+  window.open(`https://wa.me/?text=${text}`);
 }
 
 /* ---------- Init ---------- */
-document.addEventListener("DOMContentLoaded",()=>{
-  canvas=document.getElementById("signatureCanvas");
-  ctx=canvas.getContext("2d");
+window.onload = () => {
   initCanvas();
-  requestDate.value=new Date().toISOString().split("T")[0];
+  document.getElementById("requestDate").value = new Date().toISOString().split("T")[0];
 
-  canvas.addEventListener("mousedown",e=>{drawing=true;ctx.beginPath();ctx.moveTo(e.offsetX,e.offsetY)});
-  canvas.addEventListener("mousemove",e=>{if(drawing){ctx.lineTo(e.offsetX,e.offsetY);ctx.stroke()}});
-  canvas.addEventListener("mouseup",()=>drawing=false);
-  canvas.addEventListener("mouseout",()=>drawing=false);
+  // Canvas Events
+  canvas.addEventListener("mousedown", startDrawing);
+  canvas.addEventListener("mousemove", draw);
+  window.addEventListener("mouseup", stopDrawing);
 
-  canvas.addEventListener("touchstart",e=>{
-    e.preventDefault();
-    drawing=true;
-    const t=e.touches[0];
-    ctx.beginPath();
-    ctx.moveTo(t.clientX-canvas.offsetLeft,t.clientY-canvas.offsetTop);
-  });
+  canvas.addEventListener("touchstart", startDrawing, {passive: false});
+  canvas.addEventListener("touchmove", draw, {passive: false});
+  window.addEventListener("touchend", stopDrawing);
 
-  canvas.addEventListener("touchmove",e=>{
-    e.preventDefault();
-    if(!drawing) return;
-    const t=e.touches[0];
-    ctx.lineTo(t.clientX-canvas.offsetLeft,t.clientY-canvas.offsetTop);
-    ctx.stroke();
-  });
+  // Form Events
+  amountInput.oninput = () => {
+    document.getElementById("amountError").classList.toggle("hidden", amountInput.value <= 2000);
+    updateEMI(); generateSummary();
+  };
+  monthsInput.oninput = () => { updateEMI(); autoDates(); generateSummary(); };
+  loanDateInput.onchange = () => { autoDates(); generateSummary(); };
+  nameInput.oninput = generateSummary;
+  document.getElementById("reason").onchange = (e) => {
+    document.getElementById("otherReasonDiv").classList.toggle("hidden", e.target.value !== "Other");
+    generateSummary();
+  };
+};
 
-  canvas.addEventListener("touchend",()=>drawing=false);
-
-  amount.oninput=()=>{amountError.classList.toggle("hidden",amount.value<=2000);updateEMI();generateSummary()};
-  months.oninput=()=>{updateEMI();autoDates();generateSummary()};
-  loanDate.onchange=()=>{autoDates();generateSummary()};
-  repayEnd.onchange=generateSummary;
-  reason.onchange=()=>otherReasonDiv.classList.toggle("hidden",reason.value!=="Other");
-});
+// Handle Window Resize for Canvas
+window.onresize = initCanvas;
 </script>
 
 </body>
