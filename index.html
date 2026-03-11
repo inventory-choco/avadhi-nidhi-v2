@@ -13,6 +13,8 @@
   <style>
     :root{
       --bg: #0b1220;
+		--charity: #818cf8;
+      --charity-bg: rgba(129, 140, 248, 0.1);
       --panel: rgba(255,255,255,.06);
       --panel2: rgba(255,255,255,.08);
       --border: rgba(255,255,255,.10);
@@ -106,7 +108,7 @@
       gap: 12px;
     }
     .kpi{
-      grid-column: span 4;
+      grid-column: span 3;
       padding: 14px 14px 12px;
     }
     @media (max-width: 992px){
@@ -170,7 +172,8 @@
     .badge-soft.good{ border-color: rgba(29,185,84,.35); background: rgba(29,185,84,.12); }
     .badge-soft.warn{ border-color: rgba(245,197,66,.35); background: rgba(245,197,66,.12); }
     .badge-soft.bad{ border-color: rgba(255,92,92,.35); background: rgba(255,92,92,.12); }
-
+.badge-soft.charity{ border-color: rgba(129,140,248,.35); background: rgba(129,140,248,.12); color: #c7d2fe; }
+    .charity-text { color: #c7d2fe !important; }
     .table-wrap{
       border-radius: 14px;
       overflow: hidden;
@@ -390,6 +393,11 @@
           <div class="value">AED <span id="kpiPaidTill">—</span></div>
           <div class="hint">Includes OB</div>
         </div>
+		  <div class="glass2 kpi">
+  <div class="label"><span>Total Charity Fund</span><span class="dot charity"></span></div>
+  <div class="value">AED <span id="kpiCharityTotal">—</span></div>
+  <div class="hint">Auto-collected fund</div>
+</div>
 
         <div class="glass2 kpi">
           <div class="label"><span>Outstanding Till Date</span><span class="dot bad"></span></div>
@@ -438,7 +446,20 @@
 
     <!-- WARNINGS -->
     <div class="mt-3" id="warningsArea" style="display:none;"></div>
-
+<!-- CHARITY TABLE -->
+    <div class="mt-3 glass section" id="charitySection">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <h2 class="mb-1" style="color: var(--charity);">Charity Fund (Auto-Filled)</h2>
+          <div class="muted">AED 5 monthly collection starting Mar-26.</div>
+        </div>
+      </div>
+      <div class="mt-3 table-wrap" style="border-color: rgba(129, 140, 248, 0.3);">
+        <div style="max-height: 350px; overflow:auto;">
+          <table class="table table-dark table-hover align-middle" id="charityTable"></table>
+        </div>
+      </div>
+    </div>
     <!-- PAYMENTS TABLE -->
     <div class="mt-3 glass section">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -634,6 +655,8 @@ let activePaymentsYear = 2026; // default
     const CSV_LOANS = "Loan.csv";
     const MONTHLY_CONTRIBUTION = 100;
     const CURRENCY = "AED";
+	  const CHARITY_AMOUNT = 5;
+const CHARITY_START_MONTH = "Mar-26";
 
 // ──────────────────────────────────────────────────────────────
 // YEAR-SEPARATED PAYMENTS STATE (this is the key change for Step 2)
@@ -785,7 +808,15 @@ function completedMonthsBetween(fromDate, toDate){
       const fullYear = year < 100 ? 2000 + year : year;
       return new Date(fullYear, month - 1, day);
     }
-
+	  
+function getCharityMonthsCount() {
+  if (!activeMonthKey) return 0;
+  const start = monthKeyToDate(CHARITY_START_MONTH);
+  const current = monthKeyToDate(activeMonthKey);
+  if (!start || !current || current < start) return 0;
+  return (current.getFullYear() - start.getFullYear()) * 12 + (current.getMonth() - start.getMonth()) + 1;
+}
+	  
     function safeNum(v){
       const x = Number((v ?? "").toString().trim());
       return isFinite(x) ? x : 0;
@@ -1195,7 +1226,12 @@ function computeLoans() {
   const loansAgg = computeLoans();
 
   // Fund balance
-  const fundBalance = paidTill - loansAgg.totalLoanProvided + loansAgg.totalLoanRepaid;
+  // Charity Calculation
+  const charityMonths = getCharityMonthsCount();
+  const charityTotal = members * charityMonths * CHARITY_AMOUNT;
+
+  // Fund balance (Deducting charity from total fund)
+  const fundBalance = (paidTill - charityTotal) - loansAgg.totalLoanProvided + loansAgg.totalLoanRepaid;
 
   computed = {
     members,
@@ -1208,9 +1244,9 @@ function computeLoans() {
     totalLoanProvided: loansAgg.totalLoanProvided,
     totalLoanRepaid: loansAgg.totalLoanRepaid,
     totalLoanOutstanding: loansAgg.totalLoanOutstanding,
-    fundBalance
+    fundBalance,
+    charityTotal // Added this
   };
-
   // Warnings for mismatches
   if (mismatches.length){
     warn(`Some members have "Total Paid" in payments.csv that does not match calculated total (OB + sum of all month columns). This is fine, but you may want to correct it. Example: ${mismatches[0].Name} (CSV ${mismatches[0].csv}, Calc ${mismatches[0].calc.toFixed(2)}).`);
@@ -1233,6 +1269,9 @@ function computeLoans() {
 
       $("kpiLoanOutstanding").textContent = toMoney(computed.totalLoanOutstanding, 2);
       $("kpiFundBalance").textContent = toMoney(computed.fundBalance, 2);
+
+		$("kpiCharityTotal").textContent = toMoney(computed.charityTotal, 0);
+      renderCharityTable();
 
       // Set month dot color based on month outstanding
       const mdot = $("monthDot");
@@ -1260,6 +1299,35 @@ function computeLoans() {
       return String(a.Name || "").localeCompare(String(b.Name || ""), undefined, { sensitivity: "base" });
     }
 
+	  function renderCharityTable() {
+  const table = $("charityTable");
+  table.innerHTML = "";
+  const months = getCharityMonthsCount();
+  const headers = ["SN", "Name", "Total Paid", "OB", ...paymentsCalcMonthKeys];
+
+  let thead = `<thead><tr>`;
+  headers.forEach(h => thead += `<th class="${h==='Name'?'sticky-name':''}">${h}</th>`);
+  thead += `</tr></thead><tbody>`;
+  
+  paymentsCalcRows.forEach(r => {
+    let tr = `<tr>`;
+    headers.forEach(h => {
+      let val = "";
+      if(h==="SN") val = r.SN;
+      else if(h==="Name") val = r.Name;
+      else if(h==="Total Paid") val = (months * CHARITY_AMOUNT).toFixed(2);
+      else if(h==="OB") val = "0.00";
+      else if(isMonthKey(h)) {
+        const d = monthKeyToDate(h);
+        if(d && d >= monthKeyToDate(CHARITY_START_MONTH) && d <= monthKeyToDate(activeMonthKey)) val = `<span class="charity-text">5</span>`;
+      }
+      tr += `<td class="${h==='Name'?'sticky-name':''}">${val}</td>`;
+    });
+    thead += tr + `</tr>`;
+  });
+  table.innerHTML = thead + `</tbody>`;
+}
+	  
     function renderPaymentsTable() {
 // Handle Read-Only Notice and Admin Restrictions
   const isReadOnly = (activePaymentsYear !== 2026);
@@ -1329,7 +1397,8 @@ function computeLoans() {
       if (h === "Total Paid") {
         const found = paymentsComputedRows.find(x => x.Name === r.Name);
         const calc = found ? found.__calcTotalPaid : safeNum(r["Total Paid"]);
-        val = calc.toFixed(2);
+        const charityDeduction = activePaymentsYear === 2026 ? (getCharityMonthsCount() * CHARITY_AMOUNT) : 0;
+val = (calc - charityDeduction).toFixed(2);
         totals[h] += calc;
       } else if (h === "OB") {
         const ob = safeNum(r.OB);
@@ -1508,6 +1577,8 @@ function computeLoans() {
       const paidTillMonths = p ? sumMonths(p, paymentsCalcMonthKeys, activeMonthKey) : 0;
       const paidTill = ob + paidTillMonths;
       const outstanding = expectedTill - paidTill;
+		const charityDeduction = getCharityMonthsCount() * CHARITY_AMOUNT;
+      const netBalance = paidTill - charityDeduction;
 
       const currentMonthPaid = p ? safeNum(p[activeMonthKey]) : 0;
 
