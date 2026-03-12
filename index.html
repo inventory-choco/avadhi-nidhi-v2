@@ -239,6 +239,10 @@
       color: var(--text);
       border-radius: 12px;
     }
+.form-select option {
+      background-color: #161f30; /* Dark background for PC dropdowns */
+      color: white;
+    }
     .form-control:focus, .form-select:focus{
       box-shadow: 0 0 0 .2rem rgba(110,168,254,.18);
       border-color: rgba(110,168,254,.45);
@@ -472,53 +476,7 @@
       </div>
     </div>
 
-        <div class="glass2 kpi">
-          <div class="label"><span>Expected This Month</span><span class="dot"></span></div>
-          <div class="value">AED <span id="kpiExpectedMonth">—</span></div>
-          <div class="hint">Members × 100</div>
-        </div>
-
-        <div class="glass2 kpi">
-          <div class="label"><span>Paid This Month</span><span class="dot good"></span></div>
-          <div class="value">AED <span id="kpiPaidMonth">—</span></div>
-          <div class="hint">Sum of active month column</div>
-        </div>
-
-        <div class="glass2 kpi">
-          <div class="label"><span>Outstanding This Month</span><span class="dot warn"></span></div>
-          <div class="value">AED <span id="kpiOutMonth">—</span></div>
-          <div class="hint">Expected − Paid</div>
-        </div>
-
-        <div class="glass2 kpi">
-          <div class="label"><span>Paid Till Date</span><span class="dot good"></span></div>
-          <div class="value">AED <span id="kpiPaidTill">—</span></div>
-          <div class="hint">Includes OB</div>
-        </div>
-		  <div class="glass2 kpi">
-  <div class="label"><span>Total Charity Fund</span><span class="dot charity"></span></div>
-  <div class="value">AED <span id="kpiCharityTotal">—</span></div>
-  <div class="hint">Auto-collected fund</div>
-</div>
-
-        <div class="glass2 kpi">
-          <div class="label"><span>Outstanding Till Date</span><span class="dot bad"></span></div>
-          <div class="value">AED <span id="kpiOutTill">—</span></div>
-          <div class="hint">Expected till date − Paid till date</div>
-        </div>
-
-        <div class="glass2 kpi">
-          <div class="label"><span>Total Loan Outstanding</span><span class="dot warn"></span></div>
-          <div class="value">AED <span id="kpiLoanOutstanding">—</span></div>
-          <div class="hint">Sum of loan balances</div>
-        </div>
-
-        <div class="glass2 kpi">
-          <div class="label"><span>Fund Balance</span><span class="dot"></span></div>
-          <div class="value">AED <span id="kpiFundBalance">—</span></div>
-          <div class="hint">Paid − Loan Given + Loan Repaid</div>
-        </div>
-      </div>
+             </div>
     </div>
 
     <!-- MEMBER QUICK VIEW -->
@@ -1336,41 +1294,43 @@ function computeLoans() {
      * RENDER
      ***********************/
     function renderAll(){
-      // Global
-      $("kpiMembers").textContent = computed.members;
+      // 1. Global Member Count
+      if ($("kpiMembers")) $("kpiMembers").textContent = computed.members;
 
-      // Line 1: Monthly Payment
-      $("mExpMonth").textContent = toMoney(computed.mExpMonth, 0);
-      $("mPaidMonth").textContent = toMoney(computed.mPaidMonth, 0);
-      $("mOutMonth").textContent = toMoney(computed.mOutMonth, 0);
-      $("mExpTill").textContent = toMoney(computed.mExpTill, 0);
-      $("mPaidTill").textContent = toMoney(computed.mPaidTill, 0);
-      $("mOutTill").textContent = toMoney(computed.mOutTill, 0);
+      // 2. Line 1: Monthly Payment
+      if ($("mExpMonth")) $("mExpMonth").textContent = toMoney(computed.mExpMonth, 0);
+      if ($("mPaidMonth")) $("mPaidMonth").textContent = toMoney(computed.mPaidMonth, 0);
+      if ($("mOutMonth")) $("mOutMonth").textContent = toMoney(computed.mOutMonth, 0);
+      if ($("mExpTill")) $("mExpTill").textContent = toMoney(computed.mExpTill, 0);
+      if ($("mPaidTill")) $("mPaidTill").textContent = toMoney(computed.mPaidTill, 0);
+      if ($("mOutTill")) $("mOutTill").textContent = toMoney(computed.mOutTill, 0);
 
-      // Line 2: Charity
-      $("cExpMonth").textContent = toMoney(computed.cExpMonth, 0);
-      $("cPaidMonth").textContent = toMoney(computed.cPaidMonth, 0);
-      $("cOutMonth").textContent = toMoney(computed.cOutMonth, 0);
-      $("cExpTill").textContent = toMoney(computed.cExpTill, 0);
-      $("cPaidTill").textContent = toMoney(computed.cPaidTill, 0);
-      $("cOutTill").textContent = toMoney(computed.cOutTill, 0);
+      // 3. Line 2: Charity
+      if ($("cExpMonth")) $("cExpMonth").textContent = toMoney(computed.cExpMonth, 0);
+      if ($("cPaidMonth")) $("cPaidMonth").textContent = toMoney(computed.cPaidMonth, 0);
+      if ($("cOutMonth")) $("cOutMonth").textContent = toMoney(computed.cOutMonth, 0);
+      if ($("cExpTill")) $("cExpTill").textContent = toMoney(computed.cExpTill, 0);
+      if ($("cPaidTill")) $("cPaidTill").textContent = toMoney(computed.cPaidTill, 0);
+      if ($("cOutTill")) $("cOutTill").textContent = toMoney(computed.cOutTill, 0);
 
-      // Line 3: Loan
-      $("lProvided").textContent = toMoney(computed.lProvided, 0);
-      $("lRepaid").textContent = toMoney(computed.lRepaid, 0);
-      $("lOutTill").textContent = toMoney(computed.lOutTill, 0);
+      // 4. Line 3: Loan
+      if ($("lProvided")) $("lProvided").textContent = toMoney(computed.lProvided, 0);
+      if ($("lRepaid")) $("lRepaid").textContent = toMoney(computed.lRepaid, 0);
+      if ($("lOutTill")) $("lOutTill").textContent = toMoney(computed.lOutTill, 0);
 
-      // Line 4: Final Summary
-      $("finalCash").textContent = toMoney(computed.finalCash, 2);
+      // 5. Line 4: Final Summary (Cash in Hand)
+      if ($("finalCash")) $("finalCash").textContent = toMoney(computed.finalCash, 2);
 
-      // Refresh Tables
+      // 6. Refresh Tables
       renderCharityTable();
       renderPaymentsTable();
       renderLoansTable();
 
-      // Active Month Status Dot
+      // 7. Active Month Status Dot
       const mdot = $("monthDot");
-      mdot.className = "dot " + (computed.mOutMonth <= 0 ? "good" : "warn");
+      if (mdot) {
+        mdot.className = "dot " + (computed.mOutMonth <= 0 ? "good" : "warn");
+      }
     }
 
     // NEW: generic compare helpers for sorting
