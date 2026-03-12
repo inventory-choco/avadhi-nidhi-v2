@@ -1339,7 +1339,7 @@ function computeAll(){
         charityDeductionTotal: cExpTill
       };
     }
-computeAll()
+
 
 
     /***********************
@@ -1607,7 +1607,8 @@ function renderMemberCard(name) {
 
     if (!name) {
         card.innerHTML = `<div class="muted">Pick a member to see details.</div>`;
-        snap.style.opacity = ".45"; snap.style.pointerEvents = "none";
+        snap.style.opacity = ".45";
+        snap.style.pointerEvents = "none";
         return;
     }
 
@@ -1615,19 +1616,22 @@ function renderMemberCard(name) {
     const lMatch = loansComputedRows.find(lr => lr.Name === name);
     const mIdx = activeMonthKey ? {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12}[activeMonthKey.split('-')[0]] : 0;
 
+    // 1. Monthly Logic (Net)
     const monthlyOB = 1400 + ((mIdx - 1) * 100);
     const currentPaidRaw = p ? safeNum(p[activeMonthKey]) : 0;
     const monthlyCurrent = Math.max(0, currentPaidRaw - 5);
 
+    // 2. Charity Logic
     const charityOB = Math.max(0, (mIdx - 3) * 5);
     const charityCurrent = 5;
 
-    // FIX: Net Paid Till Date Correction (1705 -> 1700)
+    // 3. Paid Till Date Logic (Net) - Corrects 1705 to 1700
     const obFromCsv = p ? safeNum(p.OB) : 0;
-    const grossTill = obFromCsv + (p ? sumMonths(p, paymentsCalcMonthKeys, activeMonthKey) : 0);
+    const paidTillMonthsGross = p ? sumMonths(p, paymentsCalcMonthKeys, activeMonthKey) : 0;
     const charityDeductionTotal = Math.max(0, (mIdx - 2) * 5);
-    const netPaidTillDate = grossTill - charityDeductionTotal;
+    const netPaidTillDate = (obFromCsv + paidTillMonthsGross) - charityDeductionTotal;
 
+    // 4. Loan Logic
     const loanIssue = lMatch && lMatch.__row ? lMatch.__row["LOAN ISSUE DATE"] : "—";
     const loanAmt = lMatch ? safeNum(lMatch["Loan Amount"]) : 0;
     const loanRepaid = lMatch ? safeNum(lMatch["Repaid"]) : 0;
@@ -1635,30 +1639,50 @@ function renderMemberCard(name) {
 
     card.innerHTML = `
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <div class="fw-bold" style="font-size:1.2rem; color:var(--accent)">${name} - Summary</div>
-            <div class="badge-soft good">Net Total Paid: AED ${toMoney(netPaidTillDate, 2)}</div>
+            <div class="fw-bold" style="font-size:1.2rem; color:var(--accent)">${name} - Summary Report</div>
+            <div class="badge-soft good" style="font-size:1rem;">Net Total Paid: AED ${toMoney(netPaidTillDate, 2)}</div>
         </div>
+        
         <div class="table-responsive">
             <table class="report-table">
                 <thead>
-                    <tr><th colspan="2">Monthly</th><th colspan="2">Charity</th><th colspan="4">Loan Details</th></tr>
-                    <tr><th>OB</th><th>Current</th><th>OB</th><th>Current</th><th>Issued</th><th>Repaid</th><th>Balance</th><th>Status</th></tr>
+                    <tr>
+                        <th colspan="2" style="background: rgba(110,168,254,0.2)">Monthly Payment</th>
+                        <th colspan="2" style="background: rgba(129,140,248,0.2)">Charity</th>
+                        <th colspan="4" style="background: rgba(245,197,66,0.1)">Loan Details</th>
+                    </tr>
+                    <tr>
+                        <th>OB</th><th>Current</th>
+                        <th>OB</th><th>Current</th>
+                        <th>Issued</th><th>Repaid</th><th>Balance</th><th>Status</th>
+                    </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>${monthlyOB}</td><td>${monthlyCurrent}</td>
-                        <td>${charityOB}</td><td>${charityCurrent}</td>
-                        <td>${loanIssue}</td><td>${loanRepaid}</td><td>${loanBal}</td>
-                        <td>${lMatch ? lMatch.__rawStatus : 'No Loan'}</td>
+                        <td class="fw-bold text-white">${monthlyOB}</td>
+                        <td class="fw-bold text-white">${monthlyCurrent}</td>
+                        <td class="fw-bold text-white">${charityOB}</td>
+                        <td class="fw-bold text-white">${charityCurrent}</td>
+                        <td style="font-size:11px;">${loanIssue}</td>
+                        <td>${loanRepaid}</td>
+                        <td class="fw-bold text-white">${loanBal}</td>
+                        <td style="font-size:11px;">${lMatch ? lMatch.__rawStatus : 'No Loan'}</td>
                     </tr>
                 </tbody>
             </table>
-        </div>`;
-    snap.style.opacity = "1"; snap.style.pointerEvents = "auto"; snap.dataset.member = name;
+        </div>
+        <div class="mt-3 help" style="color: var(--muted)">
+            * <strong>Net Total Paid</strong> (AED ${toMoney(netPaidTillDate, 2)}) excludes the AED 5 charity deduction.
+        </div>
+    `;
+
+    snap.style.opacity = "1";
+    snap.style.pointerEvents = "auto";
+    snap.dataset.member = name;
 }
 
 
-    }    // NEW: snapshot feature (PC + mobile)
+       // NEW: snapshot feature (PC + mobile)
     function sanitizeFilePart(s){
       return String(s || "")
         .trim()
@@ -1835,8 +1859,6 @@ function renderMemberCard(name) {
       }
 
       determineActiveMonth();
-      computeAll();
-      renderAll();
       populateMemberSelects();
       updateLastDataUpdateLabel();
 
