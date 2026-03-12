@@ -850,6 +850,17 @@ function renderCharityTable() {
       });
       table.innerHTML = thead + `</tbody>`;
     }
+
+
+function cmpSN(a, b){
+      const na = Number(a.SN), nb = Number(b.SN);
+      return (isFinite(na) ? na : 0) - (isFinite(nb) ? nb : 0);
+    }
+    function cmpName(a, b){
+      return String(a.Name || "").localeCompare(String(b.Name || ""), undefined, { sensitivity: "base" });
+    }
+
+
     function toMoney(n, dp=2){
       const x = Number(n);
       if (!isFinite(x)) return "0.00";
@@ -1092,8 +1103,7 @@ function getLoanStatus(issueDateStr, balance) {
         determineActiveMonth();
 
         // Compute everything + render
-        computeAll();
-        renderAll();
+        
 
         // Populate member selectors
         populateMemberSelects();
@@ -1312,6 +1322,7 @@ function computeLoans() {
   };
 }
 
+
 function computeAll(){
       const members = paymentsCalcRows.length;
       let monthIndex = 0;
@@ -1325,12 +1336,9 @@ function computeAll(){
       const cExpTill = cExpMonth * charityMonthsPassed;
 
       const mExpMonth = members * 100;
-      // Requirement: (1400 + (monthIndex * 100)) * members -> (1400+300)*19 = 32300
       const mExpTill = (1400 + (monthIndex * 100)) * members; 
 
-      let mGrossPaidMonth = 0;
-      let mGrossPaidTill = 0;
-      let mOutMonthSum = 0;
+      let mGrossPaidMonth = 0, mGrossPaidTill = 0, mOutMonthSum = 0;
 
       paymentsCalcRows.forEach(r => {
         const pCurrent = safeNum(r[activeMonthKey]);
@@ -1340,25 +1348,19 @@ function computeAll(){
         mGrossPaidTill += (safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey));
       });
 
-      const mPaidMonth = mGrossPaidMonth - cExpMonth; // 1765 - 95 = 1670
-      const mPaidTill = mGrossPaidTill - cExpTill;   // 31565 - 95 = 31470
-      const mOutTill = mExpTill - mPaidTill;          
+      const mPaidMonth = mGrossPaidMonth - cExpMonth;
+      const mPaidTill = mGrossPaidTill - cExpTill;
 
       const loansAgg = computeLoans();
-      const lProvided = loansAgg.totalLoanProvided; // 22000
-      const lOutTill = loansAgg.totalLoanOutstanding; // 11800
-
-      // Requirement: 31565 (Gross) - 22000 (Issued) + 11800 (Outstanding) = 21365
-      const finalCash = mGrossPaidTill - lProvided + lOutTill;
+      const finalCash = mGrossPaidTill - loansAgg.totalLoanProvided + loansAgg.totalLoanOutstanding;
 
       computed = {
-        members, mExpMonth, mPaidMonth, mOutMonth: mOutMonthSum, mExpTill, mPaidTill, mOutTill,
+        members, mExpMonth, mPaidMonth, mOutMonth: mOutMonthSum, mExpTill, mPaidTill, mOutTill: (mExpTill - mPaidTill),
         cExpMonth, cPaidMonth: cExpMonth, cExpTill, cPaidTill: cExpTill,
-        lProvided, lRepaid: loansAgg.totalLoanRepaid, lOutTill,
+        lProvided: loansAgg.totalLoanProvided, lRepaid: loansAgg.totalLoanRepaid, lOutTill: loansAgg.totalLoanOutstanding,
         finalCash, charityDeductionTotal: cExpTill
       };
     }
-
 
     /***********************
      * RENDER
@@ -1622,31 +1624,38 @@ val = (calc - charityDeduction).toFixed(2);
 function renderMemberCard(name) {
     const card = $("memberCard");
     const snap = $("btnSnapshot");
+
     if (!name) {
         card.innerHTML = `<div class="muted">Pick a member to see details.</div>`;
         snap.style.opacity = ".45"; snap.style.pointerEvents = "none";
         return;
     }
+
     const p = paymentsCalcRows.find(r => r.Name === name);
     const lMatch = loansComputedRows.find(lr => lr.Name === name);
     const mIdx = activeMonthKey ? {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12}[activeMonthKey.split('-')[0]] : 0;
+
     const monthlyOB = 1400 + ((mIdx - 1) * 100);
     const currentPaidRaw = p ? safeNum(p[activeMonthKey]) : 0;
     const monthlyCurrent = Math.max(0, currentPaidRaw - 5);
+
     const charityOB = Math.max(0, (mIdx - 3) * 5);
     const charityCurrent = 5;
+
+    // Logic: Corrects 1705 Gross to 1700 Net
     const obFromCsv = p ? safeNum(p.OB) : 0;
     const grossTill = obFromCsv + (p ? sumMonths(p, paymentsCalcMonthKeys, activeMonthKey) : 0);
     const charityDeductionTotal = Math.max(0, (mIdx - 2) * 5);
     const netPaidTillDate = grossTill - charityDeductionTotal;
-    const lRowMatch = loansComputedRows.find(lr => lr.Name === name);
-    const loanIssue = lRowMatch && lRowMatch.__row ? lRowMatch.__row["LOAN ISSUE DATE"] : "—";
-    const loanAmt = lRowMatch ? safeNum(lRowMatch["Loan Amount"]) : 0;
-    const loanRepaid = lRowMatch ? safeNum(lRowMatch["Repaid"]) : 0;
-    const loanBal = lRowMatch ? safeNum(lRowMatch["Balance"]) : 0;
+
+    const lRow = loansComputedRows.find(lr => lr.Name === name);
+    const loanIssue = lRow && lRow.__row ? lRow.__row["LOAN ISSUE DATE"] : "—";
+    const loanRepaid = lRow ? safeNum(lRow["Repaid"]) : 0;
+    const loanBal = lRow ? safeNum(lRow["Balance"]) : 0;
+
     card.innerHTML = `
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <div class="fw-bold" style="font-size:1.2rem; color:var(--accent)">${name} - Summary Report</div>
+            <div class="fw-bold" style="font-size:1.2rem; color:var(--accent)">${name} - Summary</div>
             <div class="badge-soft good">Net Total Paid: AED ${toMoney(netPaidTillDate, 2)}</div>
         </div>
         <div class="table-responsive">
@@ -1657,10 +1666,12 @@ function renderMemberCard(name) {
                 </thead>
                 <tbody>
                     <tr>
-                        <td>${monthlyOB}</td><td>${monthlyCurrent}</td>
-                        <td>${charityOB}</td><td>${charityCurrent}</td>
+                        <td class="text-white fw-bold">${monthlyOB}</td>
+                        <td class="text-white fw-bold">${monthlyCurrent}</td>
+                        <td class="text-white fw-bold">${charityOB}</td>
+                        <td class="text-white fw-bold">${charityCurrent}</td>
                         <td>${loanIssue}</td><td>${loanRepaid}</td><td>${loanBal}</td>
-                        <td>${lRowMatch ? lRowMatch.__rawStatus : 'No Loan'}</td>
+                        <td>${lRow ? lRow.__rawStatus : 'No Loan'}</td>
                     </tr>
                 </tbody>
             </table>
