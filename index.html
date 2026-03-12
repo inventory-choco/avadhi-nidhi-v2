@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
+    .kpi-row { grid-column: span 12; display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
     :root{
       --bg: #0b1220;
 		--charity: #818cf8;
@@ -318,6 +319,21 @@
       border-color: rgba(110,168,254,.45);
       box-shadow: inset 0 0 0 9999px rgba(110,168,254,.06);
     }
+			.kpi-group-title {
+      grid-column: span 12;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-top: 20px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .kpi-row { grid-column: span 12; display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; margin-top: 10px; }
   </style>
 </head>
 
@@ -363,12 +379,98 @@
         </div>
       </div>
 
-      <div class="kpi-grid">
-        <div class="glass2 kpi">
-          <div class="label"><span>Total Members</span><span class="dot"></span></div>
-          <div class="value" id="kpiMembers">—</div>
-          <div class="hint">Count from payments.csv</div>
+      <!-- TOTAL MEMBERS AT TOP -->
+    <div class="glass2 kpi mb-3" style="max-width: 300px;">
+        <div class="label"><span>Total Members</span><span class="dot"></span></div>
+        <div class="value" id="kpiMembers">—</div>
+    </div>
+
+    <div class="kpi-grid">
+      <!-- LINE 1: Monthly Payment -->
+      <div class="kpi-group-title"><span class="dot"></span> Monthly Payment</div>
+      <div class="kpi-row">
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Expected This Month</div>
+          <div class="value">AED <span id="mExpMonth">—</span></div>
         </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Paid This Month</div>
+          <div class="value">AED <span id="mPaidMonth">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Outstanding This Month</div>
+          <div class="value">AED <span id="mOutMonth">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Total Expected</div>
+          <div class="value">AED <span id="mExpTill">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Paid Till Date</div>
+          <div class="value">AED <span id="mPaidTill">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Outstanding Till Date</div>
+          <div class="value">AED <span id="mOutTill">—</span></div>
+        </div>
+      </div>
+
+      <!-- LINE 2: Charity -->
+      <div class="kpi-group-title" style="color: var(--charity);"><span class="dot charity"></span> Charity</div>
+      <div class="kpi-row">
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Expected This Month</div>
+          <div class="value">AED <span id="cExpMonth">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Paid This Month</div>
+          <div class="value">AED <span id="cPaidMonth">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Outstanding This Month</div>
+          <div class="value">AED <span id="cOutMonth">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Total Expected</div>
+          <div class="value">AED <span id="cExpTill">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Paid Till Date</div>
+          <div class="value">AED <span id="cPaidTill">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Outstanding Till Date</div>
+          <div class="value">AED <span id="cOutTill">—</span></div>
+        </div>
+      </div>
+
+      <!-- LINE 3: Loan -->
+      <div class="kpi-group-title" style="color: var(--warn);"><span class="dot warn"></span> Loan</div>
+      <div class="kpi-row">
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Total Loan Provided</div>
+          <div class="value">AED <span id="lProvided">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Total Loan Repaid</div>
+          <div class="value">AED <span id="lRepaid">—</span></div>
+        </div>
+        <div class="glass2 kpi" style="grid-column: span 4;">
+          <div class="label">Outstanding Till Date</div>
+          <div class="value">AED <span id="lOutTill">—</span></div>
+        </div>
+      </div>
+
+      <!-- LINE 4: Fund Balance -->
+      <div class="kpi-group-title" style="color: var(--good); border-bottom-color: var(--good);"><span class="dot good"></span> Cash Summary</div>
+      <div class="kpi-row">
+        <div class="glass2 kpi" style="grid-column: span 12; background: rgba(29, 185, 84, 0.05); border: 1px solid rgba(29, 185, 84, 0.2);">
+          <div class="label" style="color: var(--good);">Fund Balance (Cash In Hand)</div>
+          <div class="value" style="font-size: 2.2rem; color: var(--good);">AED <span id="finalCash">—</span></div>
+          <div class="hint">Formula: Payment Paid Till Date − Charity Paid Till Date − Loan Outstanding</div>
+        </div>
+      </div>
+    </div>
 
         <div class="glass2 kpi">
           <div class="label"><span>Expected This Month</span><span class="dot"></span></div>
@@ -1164,128 +1266,111 @@ function computeLoans() {
 }
 
    function computeAll(){
-  const members = paymentsCalcRows.length;
-  let paidTill = 0;
-  let outTill = 0;
+      const members = paymentsCalcRows.length;
+      
+      // 1. Month Index Mapping (Jan=1, Feb=2...)
+      let monthIndex = 0;
+      if (activeMonthKey) {
+        const monthMap = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+        monthIndex = monthMap[activeMonthKey.split('-')[0]] || 0;
+      }
 
-  // FUND-LEVEL expected till date (correct logic)
-  const firstMonthKey = paymentsCalcMonthKeys[0] || null;
-  const totalMonthsTill =
-    firstMonthKey && activeMonthKey
-      ? countMonthsTill(activeMonthKey, paymentsCalcMonthKeys)
-      : 0;
+      // --- MONTHLY PAYMENT CALCULATIONS ---
+      const mExpMonth = members * 100;
+      const mExpPerMember = 1600 + (monthIndex * 100); 
+      const mExpTill = mExpPerMember * members;
 
-  // 1. Calculate the actual sum of the OB column from your CSV
-  // 1. Determine the month number (Jan=1, Feb=2, etc.)
-  let monthIndex = 0;
-  if (activeMonthKey) {
-    const monthName = activeMonthKey.split('-')[0]; // Gets "Jan" from "Jan-26"
-    const monthMap = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
-    monthIndex = monthMap[monthName] || 0;
-  }
+      let mPaidMonth = 0;
+      let mPaidTill = 0;
+      let mOutMonthSum = 0;
 
-  // 2. Calculate Expected Till Date using your formula:
-  // (1400 + (MonthNumber * 100)) * Number of Members
-  const expectedPerMember = 1400 + (monthIndex * MONTHLY_CONTRIBUTION);
-  let expectedTill = expectedPerMember * members;
+      paymentsCalcRows.forEach(r => {
+        const pCurrent = safeNum(r[activeMonthKey]);
+        mPaidMonth += pCurrent;
+        
+        // Logic: ((members paid < 100)*100) - sum of their payments
+        if (pCurrent < 100) {
+          mOutMonthSum += (100 - pCurrent);
+        }
 
-  // Expected this month
-  const expectedMonth = members * MONTHLY_CONTRIBUTION;
+        // Cumulative Paid (OB + all months up to active)
+        mPaidTill += (safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey));
+      });
 
-  // Paid this month
-  let paidMonth = 0;
-  for (const r of paymentsCalcRows){
-    paidMonth += safeNum(r[activeMonthKey]);
-  }
-  const outMonth = expectedMonth - paidMonth;
+      const mOutTill = mExpTill - mPaidTill;
 
-  // Also detect mismatches in CSV Total Paid (informational)
-  const mismatches = [];
+      // --- CHARITY CALCULATIONS ---
+      // Months passed since Feb-2026 (Mar=1, Apr=2...)
+      const charityMonthsPassed = Math.max(0, monthIndex - 2); 
+      
+      const cExpMonth = members * CHARITY_AMOUNT;
+      const cExpTill = cExpMonth * charityMonthsPassed;
 
-  // Prepare payments computed rows (using calc source)
-  paymentsComputedRows = paymentsCalcRows.map((r) => {
-    const name = r.Name;
-    const ob = safeNum(r.OB);
-    const paidMonthsSumTill = sumMonths(r, paymentsCalcMonthKeys, activeMonthKey);
-    const paidMonthsSumAll = sumMonths(r, paymentsCalcMonthKeys, null); // sum all payment month columns
-    const calcTotalPaid = ob + paidMonthsSumAll;
-    const paidTillMember = ob + paidMonthsSumTill;
-    paidTill += paidTillMember;
+      // Per your instruction: Paid = Expected
+      const cPaidMonth = cExpMonth;
+      const cPaidTill = cExpTill;
+      const cOutMonth = 0; 
+      const cOutTill = 0;
 
-    // Compare CSV Total Paid vs computed (optional check)
-    const csvTotalPaid = safeNum(r["Total Paid"]);
-    if (isFinite(csvTotalPaid) && Math.abs(csvTotalPaid - calcTotalPaid) > 0.01){
-      mismatches.push({ Name: name, csv: csvTotalPaid, calc: calcTotalPaid });
+      // --- LOAN CALCULATIONS ---
+      const loansAgg = computeLoans();
+      const lProvided = loansAgg.totalLoanProvided;
+      const lRepaid = loansAgg.totalLoanRepaid;
+      const lOutTill = lProvided - lRepaid;
+
+      // --- FINAL CASH BALANCE ---
+      // Paid Payment - Paid Charity - Loan Outstanding
+      const finalCash = mPaidTill - cPaidTill - lOutTill;
+
+      computed = {
+        members,
+        mExpMonth, mPaidMonth, mOutMonth: mOutMonthSum, mExpTill, mPaidTill, mOutTill,
+        cExpMonth, cPaidMonth, cOutMonth, cExpTill, cPaidTill, cOutTill,
+        lProvided, lRepaid, lOutTill,
+        finalCash
+      };
     }
-    return { ...r, "__calcTotalPaid": calcTotalPaid };
-  });
-
-  outTill = expectedTill - paidTill;
-
-  // Loans computed
-  const loansAgg = computeLoans();
-
-  // Fund balance
-  // Charity Calculation
-  const charityMonths = getCharityMonthsCount();
-  const charityTotal = members * charityMonths * CHARITY_AMOUNT;
-
-  // Fund balance (Deducting charity from total fund)
-  const fundBalance = (paidTill - charityTotal) - loansAgg.totalLoanProvided + loansAgg.totalLoanRepaid;
-
-  computed = {
-    members,
-    expectedMonth,
-    paidMonth,
-    outMonth,
-    expectedTill,
-    paidTill,
-    outTill,
-    totalLoanProvided: loansAgg.totalLoanProvided,
-    totalLoanRepaid: loansAgg.totalLoanRepaid,
-    totalLoanOutstanding: loansAgg.totalLoanOutstanding,
-    fundBalance,
-    charityTotal // Added this
-  };
-  // Warnings for mismatches
-  if (mismatches.length){
-    warn(`Some members have "Total Paid" in payments.csv that does not match calculated total (OB + sum of all month columns). This is fine, but you may want to correct it. Example: ${mismatches[0].Name} (CSV ${mismatches[0].csv}, Calc ${mismatches[0].calc.toFixed(2)}).`);
-  }
-}
 
 
     /***********************
      * RENDER
      ***********************/
     function renderAll(){
-      // KPIs
+      // Global
       $("kpiMembers").textContent = computed.members;
-      $("kpiExpectedMonth").textContent = toMoney(computed.expectedMonth, 0);
-      $("kpiPaidMonth").textContent = toMoney(computed.paidMonth, 0);
-      $("kpiOutMonth").textContent = toMoney(computed.outMonth, 0);
 
-      $("kpiPaidTill").textContent = toMoney(computed.paidTill, 2);
-      $("kpiOutTill").textContent = toMoney(computed.outTill, 2);
+      // Line 1: Monthly Payment
+      $("mExpMonth").textContent = toMoney(computed.mExpMonth, 0);
+      $("mPaidMonth").textContent = toMoney(computed.mPaidMonth, 0);
+      $("mOutMonth").textContent = toMoney(computed.mOutMonth, 0);
+      $("mExpTill").textContent = toMoney(computed.mExpTill, 0);
+      $("mPaidTill").textContent = toMoney(computed.mPaidTill, 0);
+      $("mOutTill").textContent = toMoney(computed.mOutTill, 0);
 
-      $("kpiLoanOutstanding").textContent = toMoney(computed.totalLoanOutstanding, 2);
-      $("kpiFundBalance").textContent = toMoney(computed.fundBalance, 2);
+      // Line 2: Charity
+      $("cExpMonth").textContent = toMoney(computed.cExpMonth, 0);
+      $("cPaidMonth").textContent = toMoney(computed.cPaidMonth, 0);
+      $("cOutMonth").textContent = toMoney(computed.cOutMonth, 0);
+      $("cExpTill").textContent = toMoney(computed.cExpTill, 0);
+      $("cPaidTill").textContent = toMoney(computed.cPaidTill, 0);
+      $("cOutTill").textContent = toMoney(computed.cOutTill, 0);
 
-		$("kpiCharityTotal").textContent = toMoney(computed.charityTotal, 0);
+      // Line 3: Loan
+      $("lProvided").textContent = toMoney(computed.lProvided, 0);
+      $("lRepaid").textContent = toMoney(computed.lRepaid, 0);
+      $("lOutTill").textContent = toMoney(computed.lOutTill, 0);
+
+      // Line 4: Final Summary
+      $("finalCash").textContent = toMoney(computed.finalCash, 2);
+
+      // Refresh Tables
       renderCharityTable();
-
-      // Set month dot color based on month outstanding
-      const mdot = $("monthDot");
-      mdot.className = "dot";
-      if (!activeMonthKey) mdot.classList.add("bad");
-      else if (computed.outMonth <= 0) mdot.classList.add("good");
-      else if (computed.outMonth < computed.expectedMonth * 0.2) mdot.classList.add("warn");
-      else mdot.classList.add("bad");
-
-      // Payments table
       renderPaymentsTable();
-
-      // Loans table
       renderLoansTable();
+
+      // Active Month Status Dot
+      const mdot = $("monthDot");
+      mdot.className = "dot " + (computed.mOutMonth <= 0 ? "good" : "warn");
     }
 
     // NEW: generic compare helpers for sorting
