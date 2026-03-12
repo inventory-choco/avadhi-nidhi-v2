@@ -508,39 +508,38 @@
           <div class="label" style="color: var(--good);">Fund Balance (Cash In Hand)</div>
           <div class="value" style="font-size: 2.2rem; color: var(--good);">AED <span id="finalCash">—</span></div>
           <div class="hint">Formula: Payment Paid Till Date − Charity Paid Till Date − Loan Outstanding</div>
-        </div>
-     
+</div> <!-- End Cash Summary KPI -->
+      </div> <!-- End Cash Summary Row -->
+    </div> <!-- End KPI Grid -->
+
+    <!-- MEMBER QUICK VIEW -->
     <div class="mt-3 glass section">
       <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
         <div>
           <h2 class="mb-1">Member Quick View</h2>
-          <div class="muted">Select a member to view expected, paid, outstanding, and loan status.</div>
+          <div class="muted">Select a member to view payment, charity, and loan details.</div>
         </div>
         <div class="d-flex gap-2 flex-wrap align-items-center">
           <select class="form-select" id="memberSelect" style="min-width: 260px;">
             <option value="">Select member…</option>
           </select>
-
-          <!-- NEW: snapshot camera -->
           <div class="snap-btn" id="btnSnapshot" title="Download snapshot" aria-label="Download snapshot" style="opacity:.45; pointer-events:none;">
             📸
           </div>
         </div>
       </div>
 
-      <!-- NEW: wrap member card for snapshot -->
       <div class="mt-3 glass2 member-card" id="memberCardWrap">
         <div class="muted" id="memberCard">Pick a member to see details.</div>
       </div>
+      
+      <!-- WhatsApp Report Button placed inside the section so it doesn't break layout -->
+      <div class="mt-3">
+          <button class="btn btn-primary w-100 py-3 fw-bold" onclick="generateFullWhatsAppReport()">
+            📥 Download Full WhatsApp Report (All Members)
+          </button>
+      </div>
     </div>
-
-
-<div class="d-flex gap-2 mt-2">
-    <button class="btn btn-primary btn-sm" onclick="generateFullWhatsAppReport()">📥 Download Full WhatsApp Report (All Members)</button>
-</div>
-
-<!-- Add this at the very bottom of your <body> for image generation -->
-<div id="fullReportCapture"></div>
 
 
 
@@ -1666,12 +1665,14 @@ function renderMemberCard(name){
       
       const mIdx = activeMonthKey ? {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12}[activeMonthKey.split('-')[0]] : 0;
       
-      // 1. Monthly Logic
+      // 1. Monthly Logic (Net)
       const monthlyOB = 1400 + ((mIdx - 1) * 100);
       const currentPaidRaw = p ? safeNum(p[activeMonthKey]) : 0;
+      // Subtract charity from current month payment
       const monthlyCurrent = Math.max(0, currentPaidRaw - 5);
 
       // 2. Charity Logic (Starts Mar-26)
+      // OB is 5 AED for every month passed since Feb (March is index 3)
       const charityOB = Math.max(0, (mIdx - 3) * 5); 
       const charityCurrent = 5;
 
@@ -1701,22 +1702,27 @@ function renderMemberCard(name){
                 </thead>
                 <tbody>
                     <tr>
-                        <td>${monthlyOB}</td><td>${monthlyCurrent}</td>
-                        <td>${charityOB}</td><td>${charityCurrent}</td>
-                        <td>${loanIssue}</td><td>${loanAmt}</td><td>${loanRepaid}</td><td>${loanBal}</td><td>${loanDeadline}</td><td>${loanStatus}</td>
+                        <td class="fw-bold text-white">${monthlyOB}</td>
+                        <td class="fw-bold text-white">${monthlyCurrent}</td>
+                        <td class="fw-bold text-white">${charityOB}</td>
+                        <td class="fw-bold text-white">${charityCurrent}</td>
+                        <td>${loanIssue}</td>
+                        <td>${loanAmt}</td>
+                        <td>${loanRepaid}</td>
+                        <td class="fw-bold text-white">${loanBal}</td>
+                        <td>${loanDeadline}</td>
+                        <td>${loanStatus}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <div class="mt-2 help">* Detailed individual report for WhatsApp sharing.</div>
+        <div class="mt-2 help">* Detailed individual report (Excluding AED 5 Charity per month).</div>
       `;
 
       snap.style.opacity = "1";
       snap.style.pointerEvents = "auto";
       snap.dataset.member = name;
     }
-
-
 
     // NEW: snapshot feature (PC + mobile)
     function sanitizeFilePart(s){
