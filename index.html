@@ -534,11 +534,12 @@
       </div>
       
       <!-- WhatsApp Report Button placed inside the section so it doesn't break layout -->
-      <div class="mt-3">
-          <button class="btn btn-primary w-100 py-3 fw-bold" onclick="generateFullWhatsAppReport()">
-            📥 Download Full WhatsApp Report (All Members)
-          </button>
-      </div>
+     <div class="mt-3">
+    <button class="btn btn-primary w-100 py-3 fw-bold" id="btnFullReport" onclick="generateFullWhatsAppReport()">
+      <span id="reportBtnText">📥 Download Full WhatsApp Report (All Members)</span>
+      <span id="reportBtnLoading" style="display:none;">⏳ Generating Report... Please wait...</span>
+    </button>
+</div>
     </div>
 
 
@@ -2109,65 +2110,122 @@ $("payments2025Btn").classList.remove("active");
     });
 async function generateFullWhatsAppReport() {
     const reportArea = $("fullReportCapture");
+    const btnText = $("reportBtnText");
+    const btnLoading = $("reportBtnLoading");
+    const btn = $("btnFullReport");
+
+    // 1. Check if element exists
+    if (!reportArea) {
+        showToast("Error", "Report container missing in HTML. Please refresh.", "bad");
+        return;
+    }
+
+    // 2. Show Loading State
+    btn.disabled = true;
+    btnText.style.display = "none";
+    btnLoading.style.display = "inline";
+
     const mIdx = activeMonthKey ? {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12}[activeMonthKey.split('-')[0]] : 0;
 
+    // 3. Build the Report Content
     let html = `
-        <div style="padding:30px; color:white; font-family:sans-serif;">
-            <h2 style="text-align:center; color:#6ea8fe; margin-bottom:5px;">Avadhi Nidhi - Payment Summary</h2>
-            <p style="text-align:center; color:#888; margin-bottom:25px;">Active Month: ${activeMonthKey}</p>
-            <table class="report-table">
+        <div style="padding:40px; color:white; font-family: 'Inter', sans-serif; background-color: #0b1220;">
+            <div style="text-align:center; margin-bottom:30px;">
+                <h1 style="color:#6ea8fe; margin:0; font-size:32px;">Avadhi Nidhi</h1>
+                <p style="color:#888; font-size:18px; margin:5px 0 0 0;">Monthly Status Report: <strong>${activeMonthKey}</strong></p>
+            </div>
+            <table class="report-table" style="width:100%; border-collapse: collapse; font-size: 14px;">
                 <thead>
                     <tr>
-                        <th rowspan="2">Member Name</th>
-                        <th colspan="2">Monthly</th>
-                        <th colspan="2">Charity</th>
-                        <th colspan="6">Loan</th>
+                        <th rowspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Member Name</th>
+                        <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Monthly Payment</th>
+                        <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Charity Fund</th>
+                        <th colspan="4" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Loan Tracking</th>
                     </tr>
                     <tr>
-                        <th>OB</th><th>Current</th>
-                        <th>OB</th><th>Current</th>
-                        <th>Issued</th><th>Amount</th><th>Repaid</th><th>Balance</th><th>Deadline</th><th>Status</th>
+                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">OB</th>
+                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Paid</th>
+                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">OB</th>
+                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Paid</th>
+                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Issued</th>
+                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Repaid</th>
+                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Balance</th>
+                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Status</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
     paymentsCalcRows.forEach(r => {
-        if (r.Name === "TOTAL") return;
+        if (!r.Name || r.Name === "TOTAL") return;
+        
         const l = loansComputedRows.find(lr => lr.Name === r.Name);
+        
+        // Formulas
         const monthlyOB = 1400 + ((mIdx - 1) * 100);
         const currentPaidRaw = safeNum(r[activeMonthKey]);
         const monthlyCurrent = Math.max(0, currentPaidRaw - 5);
+        
         const charityOB = Math.max(0, (mIdx - 3) * 5);
-        const charityCurrent = charityOB + 5;
+        const charityCurrent = 5;
 
-        const lIssue = l ? l.__row["LOAN ISSUE DATE"] : "—";
+        const lIssue = l && l.__row ? l.__row["LOAN ISSUE DATE"] : "—";
         const lAmt = l ? safeNum(l["Loan Amount"]) : 0;
         const lRepaid = l ? safeNum(l["Repaid"]) : 0;
         const lBal = l ? safeNum(l["Balance"]) : 0;
+        const lStatusText = l ? l.__rawStatus : "No Loan";
+        const statusColor = lStatusText === "Overdue" ? "#ff5c5c" : (lStatusText === "Cleared" || lStatusText === "On Time" ? "#1db954" : "#f5c542");
 
         html += `
-            <tr>
-                <td style="text-align:left; font-weight:bold;">${r.Name}</td>
-                <td>${monthlyOB}</td><td>${monthlyCurrent}</td>
-                <td>${charityOB}</td><td>${charityCurrent}</td>
-                <td>${lIssue}</td><td>${lAmt}</td><td>${lRepaid}</td><td>${lBal}</td><td>${getLoanDeadline(lIssue)}</td><td>${getLoanStatus(lIssue, lBal)}</td>
+            <tr style="border-bottom: 1px solid #334155;">
+                <td style="padding:12px; font-weight:bold; border:1px solid #334155;">${r.Name}</td>
+                <td style="text-align:center; border:1px solid #334155;">${monthlyOB}</td>
+                <td style="text-align:center; border:1px solid #334155; color:${monthlyCurrent >= 100 ? '#1db954':'#ff5c5c'}">${monthlyCurrent}</td>
+                <td style="text-align:center; border:1px solid #334155;">${charityOB}</td>
+                <td style="text-align:center; border:1px solid #334155; color:#818cf8">${charityCurrent}</td>
+                <td style="text-align:center; border:1px solid #334155; font-size:11px;">${lIssue}</td>
+                <td style="text-align:center; border:1px solid #334155;">${lAmt > 0 ? lRepaid : '—'}</td>
+                <td style="text-align:center; border:1px solid #334155;">${lAmt > 0 ? lBal : '—'}</td>
+                <td style="text-align:center; border:1px solid #334155; color:${statusColor}; font-weight:bold; font-size:11px;">${lStatusText}</td>
             </tr>`;
     });
 
-    html += `</tbody></table></div>`;
+    html += `</tbody></table>
+            <div style="margin-top:30px; text-align:right; font-size:12px; color:#555;">
+                Generated on: ${new Date().toLocaleString()} | Avadhi Nidhi System
+            </div>
+        </div>`;
+        
     reportArea.innerHTML = html;
 
-    try {
-        const canvas = await html2canvas(reportArea, { backgroundColor: "#0b1220", scale: 2 });
-        const link = document.createElement("a");
-        link.download = `AvadhiNidhi_Summary_${activeMonthKey}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-        showToast("Success", "Full report generated for WhatsApp sharing.", "good");
-    } catch (e) {
-        showToast("Error", "Report generation failed.", "bad");
-    }
-}
-  </script>
+    // 4. Convert to Image and Download
+    setTimeout(async () => {
+        try {
+            const canvas = await html2canvas(reportArea, { 
+                backgroundColor: "#0b1220", 
+                scale: 2,
+                logging: false,
+                useCORS: true 
+            });
+            
+            const link = document.createElement("a");
+            link.download = `AvadhiNidhi_WhatsApp_Report_${activeMonthKey}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            
+            showToast("Success", "Report image downloaded.", "good");
+        } catch (e) {
+            console.error(e);
+            showToast("Error", "Failed to generate image.", "bad");
+        } finally {
+            // 5. Reset Button State
+            btn.disabled = false;
+            btnText.style.display = "inline";
+            btnLoading.style.display = "none";
+            reportArea.innerHTML = ""; // Clean up
+        }
+    }, 500); // Small delay to ensure browser paints the report div
+}  </script>
+<div id="fullReportCapture" style="position: absolute; left: -9999px; top: 0; width: 1200px; background: #0b1220;"></div>
 </body>
+
 </html>
