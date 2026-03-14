@@ -16,8 +16,8 @@ Updated By 14-03-2026 12:45
     .kpi-row { grid-column: span 12; display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
     :root{
       --bg: #0b1220;
-		--charity: #818cf8;
-      --charity-bg: rgba(129, 140, 248, 0.1);
+		--SahayaNidhi: #818cf8;
+      --SahayaNidhi-bg: rgba(129, 140, 248, 0.1);
       --panel: rgba(255,255,255,.06);
       --panel2: rgba(255,255,255,.08);
       --border: rgba(255,255,255,.10);
@@ -207,8 +207,8 @@ Updated By 14-03-2026 12:45
     .badge-soft.good{ border-color: rgba(29,185,84,.35); background: rgba(29,185,84,.12); }
     .badge-soft.warn{ border-color: rgba(245,197,66,.35); background: rgba(245,197,66,.12); }
     .badge-soft.bad{ border-color: rgba(255,92,92,.35); background: rgba(255,92,92,.12); }
-.badge-soft.charity{ border-color: rgba(129,140,248,.35); background: rgba(129,140,248,.12); color: #c7d2fe; }
-    .charity-text { color: #c7d2fe !important; }
+.badge-soft.SahayaNidhi{ border-color: rgba(129,140,248,.35); background: rgba(129,140,248,.12); color: #c7d2fe; }
+    .SahayaNidhi-text { color: #c7d2fe !important; }
     .table-wrap{
       border-radius: 14px;
       overflow: hidden;
@@ -457,8 +457,8 @@ Updated By 14-03-2026 12:45
         </div>
       </div>
 
-      <!-- LINE 2: Charity -->
-      <div class="kpi-group-title" style="color: var(--charity);"><span class="dot charity"></span> Charity</div>
+      <!-- LINE 2: SahayaNidhi -->
+      <div class="kpi-group-title" style="color: var(--SahayaNidhi);"><span class="dot SahayaNidhi"></span> SahayaNidhi</div>
       <div class="kpi-row">
         <div class="glass2 kpi" style="grid-column: span 4;">
           <div class="label">Expected This Month</div>
@@ -510,7 +510,7 @@ Updated By 14-03-2026 12:45
           <div class="label" style="color: var(--good);">Fund Balance (Cash In Hand)</div>
           <div class="value" style="font-size: 2.2rem; color: var(--good);">AED <span id="finalCash">—</span></div>
           <div class="hint" id="fundNote" style="color: var(--warn); font-style: italic; font-weight: 600;">
-            The Charity amount AED <span id="noteCharityAmt">0</span> is not included, This will be distributed to charity monthly.
+            The SahayaNidhi amount AED <span id="noteSahayaNidhiAmt">0</span> is not included, This will be distributed to SahayaNidhi monthly.
           </div>
           <div class="help mt-2" style="font-size: 11px; opacity: 0.6;">Formula: Total Paid (Gross) − Total Loan Provided + Loan Outstanding</div>
         </div> 
@@ -522,7 +522,7 @@ Updated By 14-03-2026 12:45
       <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
         <div>
           <h2 class="mb-1">Member Quick View</h2>
-          <div class="muted">Select a member to view payment, charity, and loan details.</div>
+          <div class="muted">Select a member to view payment, SahayaNidhi, and loan details.</div>
         </div>
         <div class="d-flex gap-2 flex-wrap align-items-center">
           <select class="form-select" id="memberSelect" style="min-width: 260px;">
@@ -551,17 +551,17 @@ Updated By 14-03-2026 12:45
 
     <!-- WARNINGS -->
     <div class="mt-3" id="warningsArea" style="display:none;"></div>
-<!-- CHARITY TABLE -->
-    <div class="mt-3 glass section" id="charitySection">
+<!-- SahayaNidhi TABLE -->
+    <div class="mt-3 glass section" id="SahayaNidhiSection">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div>
-          <h2 class="mb-1" style="color: var(--charity);">Charity Fund (Auto-Filled)</h2>
+          <h2 class="mb-1" style="color: var(--SahayaNidhi);">SahayaNidhi Fund (Auto-Filled)</h2>
           <div class="muted">AED 5 monthly collection starting Mar-26.</div>
         </div>
       </div>
       <div class="mt-3 table-wrap" style="border-color: rgba(129, 140, 248, 0.3);">
         <div style="max-height: 350px; overflow:auto;">
-          <table class="table table-dark table-hover align-middle" id="charityTable"></table>
+          <table class="table table-dark table-hover align-middle" id="SahayaNidhiTable"></table>
         </div>
       </div>
     </div>
@@ -760,8 +760,8 @@ let activePaymentsYear = 2026; // default
     const CSV_LOANS = "Loan.csv";
     const MONTHLY_CONTRIBUTION = 100;
     const CURRENCY = "AED";
-	  const CHARITY_AMOUNT = 5;
-const CHARITY_START_MONTH = "Mar-26";
+	  const SahayaNidhi_AMOUNT = 5;
+const SahayaNidhi_START_MONTH = "Mar-26";
 
 // ──────────────────────────────────────────────────────────────
 // YEAR-SEPARATED PAYMENTS STATE (this is the key change for Step 2)
@@ -825,11 +825,11 @@ let activeMonthDate = null;
      ***********************/
     const $ = (id) => document.getElementById(id);
 
-function renderCharityTable() {
-      const table = $("charityTable");
+function renderSahayaNidhiTable() {
+      const table = $("SahayaNidhiTable");
       if (!table) return;
       table.innerHTML = "";
-      const months = getCharityMonthsCount();
+      const months = getSahayaNidhiMonthsCount();
       const headers = ["SN", "Name", "Total Paid", "OB", ...paymentsCalcMonthKeys];
       let thead = `<thead><tr>`;
       headers.forEach(h => thead += `<th class="${h==='Name'?'sticky-name':''}">${h}</th>`);
@@ -840,11 +840,11 @@ function renderCharityTable() {
           let val = "";
           if(h==="SN") val = r.SN;
           else if(h==="Name") val = r.Name;
-          else if(h==="Total Paid") val = (months * CHARITY_AMOUNT).toFixed(2);
+          else if(h==="Total Paid") val = (months * SahayaNidhi_AMOUNT).toFixed(2);
           else if(h==="OB") val = "0.00";
           else if(isMonthKey(h)) {
             const d = monthKeyToDate(h);
-            if(d && d >= monthKeyToDate(CHARITY_START_MONTH) && d <= monthKeyToDate(activeMonthKey)) val = `<span class="charity-text">5</span>`;
+            if(d && d >= monthKeyToDate(SahayaNidhi_START_MONTH) && d <= monthKeyToDate(activeMonthKey)) val = `<span class="SahayaNidhi-text">5</span>`;
           }
           tr += `<td class="${h==='Name'?'sticky-name':''}">${val}</td>`;
         });
@@ -952,9 +952,9 @@ function completedMonthsBetween(fromDate, toDate){
       return new Date(fullYear, month - 1, day);
     }
 	  
-function getCharityMonthsCount() {
+function getSahayaNidhiMonthsCount() {
   if (!activeMonthKey) return 0;
-  const start = monthKeyToDate(CHARITY_START_MONTH);
+  const start = monthKeyToDate(SahayaNidhi_START_MONTH);
   const current = monthKeyToDate(activeMonthKey);
   if (!start || !current || current < start) return 0;
   return (current.getFullYear() - start.getFullYear()) * 12 + (current.getMonth() - start.getMonth()) + 1;
@@ -1301,9 +1301,9 @@ function computeAll(){
       // 1. Get Month Index from Active Key (e.g., "Mar-26" -> 3)
       const mIdx = activeMonthKey ? (monthMap[activeMonthKey.split('-')[0]] || 0) : 0;
 
-      // 2. Charity Logic: Starts strictly from March (Index 3). 
+      // 2. SahayaNidhi Logic: Starts strictly from March (Index 3). 
       // Jan(1) -> 0, Feb(2) -> 0, Mar(3) -> 1
-      const charityMonthsPassed = Math.max(0, mIdx - 2); 
+      const SahayaNidhiMonthsPassed = Math.max(0, mIdx - 2); 
 
       // 3. Line 1: Monthly Payment KPI Calculations
       const mExpMonth = members * 100;
@@ -1316,7 +1316,7 @@ function computeAll(){
         const pCurrentRaw = safeNum(r[activeMonthKey]);
         mGrossPaidMonth += pCurrentRaw;
 
-        // Outstanding Logic: Payment minus 5 AED charity must be at least 100
+        // Outstanding Logic: Payment minus 5 AED SahayaNidhi must be at least 100
         const netPCurrent = Math.max(0, pCurrentRaw - 5);
         if (netPCurrent < 100) mOutMonthSum += (100 - netPCurrent);
 
@@ -1325,11 +1325,11 @@ function computeAll(){
       });
 
       const mPaidMonth = mGrossPaidMonth - (members * 5);
-      const mPaidTill = mGrossPaidTill - (members * charityMonthsPassed * 5);
+      const mPaidTill = mGrossPaidTill - (members * SahayaNidhiMonthsPassed * 5);
 
-      // 4. Line 2: Charity KPI Calculations
+      // 4. Line 2: SahayaNidhi KPI Calculations
       const cExpMonth = members * 5;
-      const cExpTill = cExpMonth * charityMonthsPassed;
+      const cExpTill = cExpMonth * SahayaNidhiMonthsPassed;
 
       // 5. Line 3: Loan Calculations (Calling separate function)
       const l = computeLoans();
@@ -1342,7 +1342,7 @@ function computeAll(){
       computed = {
         members,
         mIdx,
-        charityMonthsPassed,
+        SahayaNidhiMonthsPassed,
         mExpMonth,
         mPaidMonth,
         mOutMonth: mOutMonthSum,
@@ -1357,7 +1357,7 @@ function computeAll(){
         lRepaid: l.totalLoanRepaid,
         lOutTill: l.totalLoanOutstanding,
         finalCash,
-        charityDeductionTotal: cExpTill
+        SahayaNidhiDeductionTotal: cExpTill
       };
     }
 
@@ -1376,7 +1376,7 @@ function computeAll(){
       if ($("mPaidTill")) $("mPaidTill").textContent = toMoney(computed.mPaidTill, 0);
       if ($("mOutTill")) $("mOutTill").textContent = toMoney(computed.mOutTill, 0);
 
-      // Line 2: Charity
+      // Line 2: SahayaNidhi
       if ($("cExpMonth")) $("cExpMonth").textContent = toMoney(computed.cExpMonth, 0);
       if ($("cPaidMonth")) $("cPaidMonth").textContent = toMoney(computed.cPaidMonth, 0);
       if ($("cOutMonth")) $("cOutMonth").textContent = "0";
@@ -1391,9 +1391,9 @@ function computeAll(){
 
       // Line 4: Final Summary & Note
       if ($("finalCash")) $("finalCash").textContent = toMoney(computed.finalCash, 2);
-      if ($("noteCharityAmt")) $("noteCharityAmt").textContent = computed.charityDeductionTotal;
+      if ($("noteSahayaNidhiAmt")) $("noteSahayaNidhiAmt").textContent = computed.SahayaNidhiDeductionTotal;
 
-      renderCharityTable();
+      renderSahayaNidhiTable();
       renderPaymentsTable();
       renderLoansTable();
 
@@ -1471,8 +1471,8 @@ function computeAll(){
       if (h === "Total Paid") {
         const found = paymentsComputedRows.find(x => x.Name === r.Name);
         const calc = found ? found.__calcTotalPaid : safeNum(r["Total Paid"]);
-        const charityDeduction = activePaymentsYear === 2026 ? (getCharityMonthsCount() * CHARITY_AMOUNT) : 0;
-val = (calc - charityDeduction).toFixed(2);
+        const SahayaNidhiDeduction = activePaymentsYear === 2026 ? (getSahayaNidhiMonthsCount() * SahayaNidhi_AMOUNT) : 0;
+val = (calc - SahayaNidhiDeduction).toFixed(2);
         totals[h] += calc;
       } else if (h === "OB") {
         const ob = safeNum(r.OB);
@@ -1633,17 +1633,17 @@ function renderMemberCard(name) {
       const r = paymentsCalcRows.find(p => p.Name === name);
       const l = loansComputedRows.find(lr => lr.Name === name);
       
-      // Algorithm: Individual Net = (OB + Gross Monthly Sum) - (Charity Months Passed * 5)
+      // Algorithm: Individual Net = (OB + Gross Monthly Sum) - (SahayaNidhi Months Passed * 5)
       const grossTill = safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey);
-      const netPaidTillDate = grossTill - (computed.charityMonthsPassed * 5);
+      const netPaidTillDate = grossTill - (computed.SahayaNidhiMonthsPassed * 5);
 
       // UI Values
       const monthlyOB = 1400 + ((computed.mIdx - 1) * 100);
       const currentPaidRaw = safeNum(r[activeMonthKey]);
       const currentNet = Math.max(0, currentPaidRaw - 5);
       
-      const charityOB = Math.max(0, (computed.mIdx - 3) * 5);
-      const charityCurrent = 5;
+      const SahayaNidhiOB = Math.max(0, (computed.mIdx - 3) * 5);
+      const SahayaNidhiCurrent = 5;
 
       card.innerHTML = `
         <div class="d-flex align-items-center justify-content-between mb-3">
@@ -1653,15 +1653,15 @@ function renderMemberCard(name) {
         <div class="table-responsive">
           <table class="report-table">
             <thead>
-              <tr><th colspan="2">Monthly</th><th colspan="2">Charity</th><th colspan="4">Loan Details</th></tr>
+              <tr><th colspan="2">Monthly</th><th colspan="2">SahayaNidhi</th><th colspan="4">Loan Details</th></tr>
               <tr><th>OB</th><th>Current</th><th>OB</th><th>Current</th><th>Issued</th><th>Repaid</th><th>Balance</th><th>Status</th></tr>
             </thead>
             <tbody>
               <tr>
                 <td class="text-white fw-bold">${monthlyOB}</td>
                 <td class="text-white fw-bold">${currentNet}</td>
-                <td class="text-white fw-bold">${charityOB}</td>
-                <td class="text-white fw-bold">${charityCurrent}</td>
+                <td class="text-white fw-bold">${SahayaNidhiOB}</td>
+                <td class="text-white fw-bold">${SahayaNidhiCurrent}</td>
                 <td>${l && l.__row ? l.__row["LOAN ISSUE DATE"] : "—"}</td>
                 <td>${l ? toMoney(l.Repaid, 0) : "0"}</td>
                 <td>${l ? toMoney(l.Balance, 0) : "0"}</td>
@@ -2084,7 +2084,7 @@ async function generateFullWhatsAppReport() {
               <tr>
                 <th rowspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Member Name</th>
                 <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Monthly Payment</th>
-                <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Charity Fund</th>
+                <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">SahayaNidhi Fund</th>
                 <th colspan="4" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Loan Tracking</th>
               </tr>
               <tr>
@@ -2108,8 +2108,8 @@ async function generateFullWhatsAppReport() {
         const currentPaidRaw = safeNum(r[activeMonthKey]);
         const monthlyCurrent = Math.max(0, currentPaidRaw - 5);
         
-        const charityOB = Math.max(0, (computed.mIdx - 3) * 5);
-        const charityCurrent = 5;
+        const SahayaNidhiOB = Math.max(0, (computed.mIdx - 3) * 5);
+        const SahayaNidhiCurrent = 5;
 
         const lStatusText = l ? l.__rawStatus : "No Loan";
         const statusColor = lStatusText === "Overdue" ? "#ff5c5c" : (lStatusText === "Cleared" || lStatusText === "On Time" ? "#1db954" : "#f5c542");
@@ -2119,7 +2119,7 @@ async function generateFullWhatsAppReport() {
             <td style="padding:12px; font-weight:bold; border:1px solid #334155;">${r.Name}</td>
             <td style="text-align:center; border:1px solid #334155;">${monthlyOB}</td>
             <td style="text-align:center; border:1px solid #334155; color:${monthlyCurrent >= 100 ? '#1db954':'#ff5c5c'}">${monthlyCurrent}</td>
-            <td style="text-align:center; border:1px solid #334155;">${charityOB}</td>
+            <td style="text-align:center; border:1px solid #334155;">${SahayaNidhiOB}</td>
             <td style="text-align:center; border:1px solid #334155; color:#818cf8">5</td>
             <td style="text-align:center; border:1px solid #334155; font-size:11px;">${l && l.__row ? l.__row["LOAN ISSUE DATE"] : "—"}</td>
             <td style="text-align:center; border:1px solid #334155;">${l ? toMoney(l.Repaid, 0) : '—'}</td>
