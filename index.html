@@ -1223,89 +1223,66 @@ function countMonthsTill(activeKey, monthKeys) {
      * COMPUTATIONS
      ***********************/
 function computeLoans() {
-  loansComputedRows = [];
-  let totalLoanProvided = 0;
-  let totalLoanRepaid = 0;
-  let totalLoanOutstanding = 0;
+      loansComputedRows = [];
+      let totalLoanProvided = 0;
+      let totalLoanRepaid = 0;
 
-  for (const r of loanRows) {
-    const name = r.Name;
-    const loanAmt = safeNum(r["LOAN AMOUNT"]);
-    const months = safeNum(r["AGREED TO REPAY IN (MONTHS)"]);
-    const hasLoan = loanAmt > 0 && months > 0;
-    const loanDate = parseDateDDMMYY(r["LOAN ISSUE DATE"]);
-    const repaid = sumMonths(r, loansMonthKeys, null); // sum all month columns in Loan.csv
-    const balance = hasLoan ? (loanAmt - repaid) : 0;
+      for (const r of loanRows) {
+        const loanAmt = safeNum(r["LOAN AMOUNT"]);
+        const months = safeNum(r["AGREED TO REPAY IN (MONTHS)"]);
+        const repaid = sumMonths(r, allMonthKeys); // Sum of all months in Loan.csv
+        const bal = loanAmt > 0 ? (loanAmt - repaid) : 0;
+        const emi = (loanAmt > 0 && months > 0) ? (loanAmt / months) : 0;
 
-    let emi = hasLoan ? (loanAmt / months) : 0;
-    emi = Number(emi.toFixed(2));
+        let status = "No Loan";
+        let badge = "badge-soft";
 
-    let monthsPassed = 0;
-    let expectedTill = 0;
+        if (loanAmt > 0) {
+          totalLoanProvided += loanAmt;
+          totalLoanRepaid += repaid;
 
-    if (hasLoan && loanDate) {
-      // 2-month grace period
-      const graceEndDate = addMonthsSameDay(loanDate, 2);
-      const today = new Date();
+          if (repaid >= (loanAmt - 0.01)) {
+            status = "Cleared";
+            badge = "badge-soft good";
+          } else {
+            // Formula: Issue Date + 8 Months Deadline
+            const issueDate = parseDateDDMMYY(r["LOAN ISSUE DATE"]);
+            if (issueDate) {
+              const deadline = new Date(issueDate.getFullYear(), issueDate.getMonth() + 8, issueDate.getDate());
+              const today = new Date();
+              
+              if (today > deadline) {
+                status = "Overdue";
+                badge = "badge-soft bad";
+              } else {
+                status = "On Time";
+                badge = "badge-soft good";
+              }
+            }
+          }
+        }
 
-      // Count FULL completed EMI months after grace
-      monthsPassed = completedMonthsBetween(graceEndDate, today);
-
-      // Expected till date = EMI × monthsPassed, capped to loan amount
-      expectedTill = Math.min(
-        Number((monthsPassed * emi).toFixed(2)),
-        loanAmt
-      );
-    }
-
-    const overdueAmt = hasLoan
-      ? Math.max(0, Number((expectedTill - repaid).toFixed(2)))
-      : 0;
-
-    let status = "No Loan";
-    let badge = "badge-soft";
-
-    if (hasLoan) {
-      const graceEndDate = loanDate ? addMonthsSameDay(loanDate, 2) : null;
-      const today = new Date();
-
-      if (repaid >= loanAmt - 0.009) {
-        status = "Cleared";
-        badge = "badge-soft good";
-      } else if (graceEndDate && today < graceEndDate) {
-        status = "Not Yet Due";
-        badge = "badge-soft";
-      } else if (repaid >= expectedTill - 0.009) {
-        status = "On Time";
-        badge = "badge-soft good";
-      } else {
-        status = "Overdue";
-        badge = "badge-soft bad";
+        loansComputedRows.push({
+          SN: r.SN,
+          Name: r.Name,
+          "Loan Date": r["LOAN ISSUE DATE"] || "",
+          "Loan Amount": loanAmt,
+          "Months": months,
+          "EMI": emi,
+          "Repaid": repaid,
+          "Balance": Math.max(0, bal),
+          "Status": `<span class="${badge}"><span class="dot ${badge.includes('good')?'good':badge.includes('bad')?'bad':'warn'}"></span>${status}</span>`,
+          "__rawStatus": status,
+          "__row": r
+        });
       }
-    }
 
-    if (hasLoan) {
-      totalLoanProvided += loanAmt;
-      totalLoanRepaid += repaid;
-      totalLoanOutstanding += Math.max(0, balance);
+      return {
+        totalLoanProvided,
+        totalLoanRepaid,
+        totalLoanOutstanding: totalLoanProvided - totalLoanRepaid
+      };
     }
-
-    loansComputedRows.push({
-      SN: r.SN,
-      Name: name,
-      "Loan Date": hasLoan ? (r["LOAN ISSUE DATE"] || "") : "",
-      "Loan Amount": hasLoan ? Number(loanAmt.toFixed(2)) : "",
-      "Months": hasLoan ? months : "",
-      "EMI": hasLoan ? Number(emi.toFixed(2)) : "",
-      "Repaid": hasLoan ? Number(repaid.toFixed(2)) : "",
-      "Expected Till Date": hasLoan ? Number(expectedTill.toFixed(2)) : "",
-      "Overdue Amount": hasLoan ? Number(overdueAmt.toFixed(2)) : "",
-      "Balance": hasLoan ? Number(balance.toFixed(2)) : "",
-      "Status": `<span class="${badge}"><span class="dot ${badge.includes("good")?"good":badge.includes("bad")?"bad":"warn"}"></span>${status}</span>`,
-      "__rawStatus": status,
-      "__row": r
-    });
-  }
 
   // Sort by severity first, then name
   const severity = (s) => s === "Overdue" ? 0 : s === "On Time" ? 1 : s === "Not Yet Due" ? 2 : s === "Cleared" ? 3 : 4;
@@ -1325,40 +1302,67 @@ function computeLoans() {
 
 function computeAll(){
       const members = paymentsCalcRows.length;
-      let monthIndex = 0;
-      if (activeMonthKey) {
-        const monthMap = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
-        monthIndex = monthMap[activeMonthKey.split('-')[0]] || 0;
-      }
+      const monthMap = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+      
+      // 1. Get Month Index from Active Key (e.g., "Mar-26" -> 3)
+      const mIdx = activeMonthKey ? (monthMap[activeMonthKey.split('-')[0]] || 0) : 0;
 
-      const charityMonthsPassed = Math.max(0, monthIndex - 2); 
-      const cExpMonth = members * CHARITY_AMOUNT; // 95
-      const cExpTill = cExpMonth * charityMonthsPassed;
+      // 2. Charity Logic: Starts strictly from March (Index 3). 
+      // Jan(1) -> 0, Feb(2) -> 0, Mar(3) -> 1
+      const charityMonthsPassed = Math.max(0, mIdx - 2); 
 
+      // 3. Line 1: Monthly Payment KPI Calculations
       const mExpMonth = members * 100;
-      const mExpTill = (1400 + (monthIndex * 100)) * members; 
+      // Formula: (1600 Closing Balance + (Current Month Index * 100)) * total members
+      const mExpTill = (1600 + (mIdx * 100)) * members; 
 
       let mGrossPaidMonth = 0, mGrossPaidTill = 0, mOutMonthSum = 0;
 
       paymentsCalcRows.forEach(r => {
-        const pCurrent = safeNum(r[activeMonthKey]);
-        mGrossPaidMonth += pCurrent;
-        const netPCurrent = Math.max(0, pCurrent - 5);
+        const pCurrentRaw = safeNum(r[activeMonthKey]);
+        mGrossPaidMonth += pCurrentRaw;
+
+        // Outstanding Logic: Payment minus 5 AED charity must be at least 100
+        const netPCurrent = Math.max(0, pCurrentRaw - 5);
         if (netPCurrent < 100) mOutMonthSum += (100 - netPCurrent);
+
+        // Gross Paid Till Date (Includes OB + all months)
         mGrossPaidTill += (safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey));
       });
 
-      const mPaidMonth = mGrossPaidMonth - cExpMonth;
-      const mPaidTill = mGrossPaidTill - cExpTill;
+      const mPaidMonth = mGrossPaidMonth - (members * 5);
+      const mPaidTill = mGrossPaidTill - (members * charityMonthsPassed * 5);
 
-      const loansAgg = computeLoans();
-      const finalCash = mGrossPaidTill - loansAgg.totalLoanProvided + loansAgg.totalLoanOutstanding;
+      // 4. Line 2: Charity KPI Calculations
+      const cExpMonth = members * 5;
+      const cExpTill = cExpMonth * charityMonthsPassed;
+
+      // 5. Line 3: Loan Calculations (Calling separate function)
+      const l = computeLoans();
+
+      // 6. Line 4: Fund Balance - THE GRAND FORMULA
+      // Total Gross Cash Received - Total Loans Issued + Outstanding Loans
+      const finalCash = mGrossPaidTill - l.totalLoanProvided + l.totalLoanOutstanding;
 
       computed = {
-        members, mExpMonth, mPaidMonth, mOutMonth: mOutMonthSum, mExpTill, mPaidTill, mOutTill: (mExpTill - mPaidTill),
-        cExpMonth, cPaidMonth: cExpMonth, cExpTill, cPaidTill: cExpTill,
-        lProvided: loansAgg.totalLoanProvided, lRepaid: loansAgg.totalLoanRepaid, lOutTill: loansAgg.totalLoanOutstanding,
-        finalCash, charityDeductionTotal: cExpTill
+        members,
+        mIdx,
+        charityMonthsPassed,
+        mExpMonth,
+        mPaidMonth,
+        mOutMonth: mOutMonthSum,
+        mExpTill,
+        mPaidTill,
+        mOutTill: Math.max(0, mExpTill - mPaidTill),
+        cExpMonth,
+        cPaidMonth: cExpMonth, // Auto-deducted
+        cExpTill,
+        cPaidTill: cExpTill,
+        lProvided: l.totalLoanProvided,
+        lRepaid: l.totalLoanRepaid,
+        lOutTill: l.totalLoanOutstanding,
+        finalCash,
+        charityDeductionTotal: cExpTill
       };
     }
 
@@ -1622,62 +1626,60 @@ val = (calc - charityDeduction).toFixed(2);
     
 
 function renderMemberCard(name) {
-    const card = $("memberCard");
-    const snap = $("btnSnapshot");
+      const card = $("memberCard");
+      const snap = $("btnSnapshot");
 
-    if (!name) {
+      if (!name) {
         card.innerHTML = `<div class="muted">Pick a member to see details.</div>`;
         snap.style.opacity = ".45"; snap.style.pointerEvents = "none";
         return;
-    }
+      }
 
-    const p = paymentsCalcRows.find(r => r.Name === name);
-    const lMatch = loansComputedRows.find(lr => lr.Name === name);
-    const mIdx = activeMonthKey ? {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12}[activeMonthKey.split('-')[0]] : 0;
+      const r = paymentsCalcRows.find(p => p.Name === name);
+      const l = loansComputedRows.find(lr => lr.Name === name);
+      
+      // Algorithm: Individual Net = (OB + Gross Monthly Sum) - (Charity Months Passed * 5)
+      const grossTill = safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey);
+      const netPaidTillDate = grossTill - (computed.charityMonthsPassed * 5);
 
-    const monthlyOB = 1400 + ((mIdx - 1) * 100);
-    const currentPaidRaw = p ? safeNum(p[activeMonthKey]) : 0;
-    const monthlyCurrent = Math.max(0, currentPaidRaw - 5);
+      // UI Values
+      const monthlyOB = 1400 + ((computed.mIdx - 1) * 100);
+      const currentPaidRaw = safeNum(r[activeMonthKey]);
+      const currentNet = Math.max(0, currentPaidRaw - 5);
+      
+      const charityOB = Math.max(0, (computed.mIdx - 3) * 5);
+      const charityCurrent = 5;
 
-    const charityOB = Math.max(0, (mIdx - 3) * 5);
-    const charityCurrent = 5;
-
-    // Logic: Corrects 1705 Gross to 1700 Net
-    const obFromCsv = p ? safeNum(p.OB) : 0;
-    const grossTill = obFromCsv + (p ? sumMonths(p, paymentsCalcMonthKeys, activeMonthKey) : 0);
-    const charityDeductionTotal = Math.max(0, (mIdx - 2) * 5);
-    const netPaidTillDate = grossTill - charityDeductionTotal;
-
-    const lRow = loansComputedRows.find(lr => lr.Name === name);
-    const loanIssue = lRow && lRow.__row ? lRow.__row["LOAN ISSUE DATE"] : "—";
-    const loanRepaid = lRow ? safeNum(lRow["Repaid"]) : 0;
-    const loanBal = lRow ? safeNum(lRow["Balance"]) : 0;
-
-    card.innerHTML = `
+      card.innerHTML = `
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <div class="fw-bold" style="font-size:1.2rem; color:var(--accent)">${name} - Summary</div>
-            <div class="badge-soft good">Net Total Paid: AED ${toMoney(netPaidTillDate, 2)}</div>
+          <div class="fw-bold" style="font-size:1.2rem; color:var(--accent)">${name} - Summary</div>
+          <div class="badge-soft good">Net Total Paid: AED ${toMoney(netPaidTillDate, 2)}</div>
         </div>
         <div class="table-responsive">
-            <table class="report-table">
-                <thead>
-                    <tr><th colspan="2">Monthly</th><th colspan="2">Charity</th><th colspan="4">Loan Details</th></tr>
-                    <tr><th>OB</th><th>Current</th><th>OB</th><th>Current</th><th>Issued</th><th>Repaid</th><th>Balance</th><th>Status</th></tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="text-white fw-bold">${monthlyOB}</td>
-                        <td class="text-white fw-bold">${monthlyCurrent}</td>
-                        <td class="text-white fw-bold">${charityOB}</td>
-                        <td class="text-white fw-bold">${charityCurrent}</td>
-                        <td>${loanIssue}</td><td>${loanRepaid}</td><td>${loanBal}</td>
-                        <td>${lRow ? lRow.__rawStatus : 'No Loan'}</td>
-                    </tr>
-                </tbody>
-            </table>
+          <table class="report-table">
+            <thead>
+              <tr><th colspan="2">Monthly</th><th colspan="2">Charity</th><th colspan="4">Loan Details</th></tr>
+              <tr><th>OB</th><th>Current</th><th>OB</th><th>Current</th><th>Issued</th><th>Repaid</th><th>Balance</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-white fw-bold">${monthlyOB}</td>
+                <td class="text-white fw-bold">${currentNet}</td>
+                <td class="text-white fw-bold">${charityOB}</td>
+                <td class="text-white fw-bold">${charityCurrent}</td>
+                <td>${l && l.__row ? l.__row["LOAN ISSUE DATE"] : "—"}</td>
+                <td>${l ? toMoney(l.Repaid, 0) : "0"}</td>
+                <td>${l ? toMoney(l.Balance, 0) : "0"}</td>
+                <td>${l ? l.Status : 'No Loan'}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>`;
-    snap.style.opacity = "1"; snap.style.pointerEvents = "auto"; snap.dataset.member = name;
-}
+      
+      snap.style.opacity = "1"; 
+      snap.style.pointerEvents = "auto"; 
+      snap.dataset.member = name;
+    }
 
 
        // NEW: snapshot feature (PC + mobile)
@@ -2062,122 +2064,107 @@ $("payments2025Btn").classList.remove("active");
       loadAll();
     });
 async function generateFullWhatsAppReport() {
-    const reportArea = $("fullReportCapture");
-    const btnText = $("reportBtnText");
-    const btnLoading = $("reportBtnLoading");
-    const btn = $("btnFullReport");
+      const reportArea = $("fullReportCapture");
+      const btnText = $("reportBtnText");
+      const btnLoading = $("reportBtnLoading");
+      const btn = $("btnFullReport");
 
-    // 1. Check if element exists
-    if (!reportArea) {
-        showToast("Error", "Report container missing in HTML. Please refresh.", "bad");
-        return;
-    }
+      if (!reportArea) return;
 
-    // 2. Show Loading State
-    btn.disabled = true;
-    btnText.style.display = "none";
-    btnLoading.style.display = "inline";
+      // Show Loading State
+      btn.disabled = true;
+      btnText.style.display = "none";
+      btnLoading.style.display = "inline";
 
-    const mIdx = activeMonthKey ? {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12}[activeMonthKey.split('-')[0]] : 0;
+      let html = `
+        <div style="padding:40px; color:white; font-family: 'Inter', sans-serif; background-color: #0b1220; width:1200px;">
+          <div style="text-align:center; margin-bottom:30px;">
+            <h1 style="color:#6ea8fe; margin:0; font-size:32px;">Avadhi Nidhi</h1>
+            <p style="color:#888; font-size:18px; margin:5px 0 0 0;">Monthly Status Report: <strong>${activeMonthKey}</strong></p>
+          </div>
+          <table class="report-table" style="width:100%; border-collapse: collapse; font-size: 14px;">
+            <thead>
+              <tr>
+                <th rowspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Member Name</th>
+                <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Monthly Payment</th>
+                <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Charity Fund</th>
+                <th colspan="4" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Loan Tracking</th>
+              </tr>
+              <tr>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155;">OB</th>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Paid</th>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155;">OB</th>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Paid</th>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Issued</th>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Repaid</th>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Balance</th>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Status</th>
+              </tr>
+            </thead>
+            <tbody>`;
 
-    // 3. Build the Report Content
-    let html = `
-        <div style="padding:40px; color:white; font-family: 'Inter', sans-serif; background-color: #0b1220;">
-            <div style="text-align:center; margin-bottom:30px;">
-                <h1 style="color:#6ea8fe; margin:0; font-size:32px;">Avadhi Nidhi</h1>
-                <p style="color:#888; font-size:18px; margin:5px 0 0 0;">Monthly Status Report: <strong>${activeMonthKey}</strong></p>
-            </div>
-            <table class="report-table" style="width:100%; border-collapse: collapse; font-size: 14px;">
-                <thead>
-                    <tr>
-                        <th rowspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Member Name</th>
-                        <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Monthly Payment</th>
-                        <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Charity Fund</th>
-                        <th colspan="4" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Loan Tracking</th>
-                    </tr>
-                    <tr>
-                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">OB</th>
-                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Paid</th>
-                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">OB</th>
-                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Paid</th>
-                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Issued</th>
-                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Repaid</th>
-                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Balance</th>
-                        <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Status</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-    paymentsCalcRows.forEach(r => {
-        if (!r.Name || r.Name === "TOTAL") return;
-        
+      paymentsCalcRows.forEach(r => {
         const l = loansComputedRows.find(lr => lr.Name === r.Name);
         
-        // Formulas
-        const monthlyOB = 1400 + ((mIdx - 1) * 100);
+        // Treasury Formulas
+        const monthlyOB = 1400 + ((computed.mIdx - 1) * 100);
         const currentPaidRaw = safeNum(r[activeMonthKey]);
         const monthlyCurrent = Math.max(0, currentPaidRaw - 5);
         
-        const charityOB = Math.max(0, (mIdx - 3) * 5);
+        const charityOB = Math.max(0, (computed.mIdx - 3) * 5);
         const charityCurrent = 5;
 
-        const lIssue = l && l.__row ? l.__row["LOAN ISSUE DATE"] : "—";
-        const lAmt = l ? safeNum(l["Loan Amount"]) : 0;
-        const lRepaid = l ? safeNum(l["Repaid"]) : 0;
-        const lBal = l ? safeNum(l["Balance"]) : 0;
         const lStatusText = l ? l.__rawStatus : "No Loan";
         const statusColor = lStatusText === "Overdue" ? "#ff5c5c" : (lStatusText === "Cleared" || lStatusText === "On Time" ? "#1db954" : "#f5c542");
 
         html += `
-            <tr style="border-bottom: 1px solid #334155;">
-                <td style="padding:12px; font-weight:bold; border:1px solid #334155;">${r.Name}</td>
-                <td style="text-align:center; border:1px solid #334155;">${monthlyOB}</td>
-                <td style="text-align:center; border:1px solid #334155; color:${monthlyCurrent >= 100 ? '#1db954':'#ff5c5c'}">${monthlyCurrent}</td>
-                <td style="text-align:center; border:1px solid #334155;">${charityOB}</td>
-                <td style="text-align:center; border:1px solid #334155; color:#818cf8">${charityCurrent}</td>
-                <td style="text-align:center; border:1px solid #334155; font-size:11px;">${lIssue}</td>
-                <td style="text-align:center; border:1px solid #334155;">${lAmt > 0 ? lRepaid : '—'}</td>
-                <td style="text-align:center; border:1px solid #334155;">${lAmt > 0 ? lBal : '—'}</td>
-                <td style="text-align:center; border:1px solid #334155; color:${statusColor}; font-weight:bold; font-size:11px;">${lStatusText}</td>
-            </tr>`;
-    });
+          <tr style="border-bottom: 1px solid #334155;">
+            <td style="padding:12px; font-weight:bold; border:1px solid #334155;">${r.Name}</td>
+            <td style="text-align:center; border:1px solid #334155;">${monthlyOB}</td>
+            <td style="text-align:center; border:1px solid #334155; color:${monthlyCurrent >= 100 ? '#1db954':'#ff5c5c'}">${monthlyCurrent}</td>
+            <td style="text-align:center; border:1px solid #334155;">${charityOB}</td>
+            <td style="text-align:center; border:1px solid #334155; color:#818cf8">5</td>
+            <td style="text-align:center; border:1px solid #334155; font-size:11px;">${l && l.__row ? l.__row["LOAN ISSUE DATE"] : "—"}</td>
+            <td style="text-align:center; border:1px solid #334155;">${l ? toMoney(l.Repaid, 0) : '—'}</td>
+            <td style="text-align:center; border:1px solid #334155;">${l ? toMoney(l.Balance, 0) : '—'}</td>
+            <td style="text-align:center; border:1px solid #334155; color:${statusColor}; font-weight:bold; font-size:11px;">${lStatusText}</td>
+          </tr>`;
+      });
 
-    html += `</tbody></table>
-            <div style="margin-top:30px; text-align:right; font-size:12px; color:#555;">
+      html += `</tbody></table>
+              <div style="margin-top:30px; text-align:right; font-size:12px; color:#555;">
                 Generated on: ${new Date().toLocaleString()} | Avadhi Nidhi System
-            </div>
-        </div>`;
-        
-    reportArea.innerHTML = html;
+              </div>
+            </div>`;
+          
+      reportArea.innerHTML = html;
 
-    // 4. Convert to Image and Download
-    setTimeout(async () => {
+      // Logic to convert to Image
+      setTimeout(async () => {
         try {
-            const canvas = await html2canvas(reportArea, { 
-                backgroundColor: "#0b1220", 
-                scale: 2,
-                logging: false,
-                useCORS: true 
-            });
-            
-            const link = document.createElement("a");
-            link.download = `AvadhiNidhi_WhatsApp_Report_${activeMonthKey}.png`;
-            link.href = canvas.toDataURL("image/png");
-            link.click();
-            
-            showToast("Success", "Report image downloaded.", "good");
+          const canvas = await html2canvas(reportArea, { 
+            backgroundColor: "#0b1220", 
+            scale: 2,
+            useCORS: true 
+          });
+          
+          const link = document.createElement("a");
+          link.download = `AvadhiNidhi_Report_${activeMonthKey}.png`;
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+          
+          showToast("Success", "Full report image downloaded.", "good");
         } catch (e) {
-            console.error(e);
-            showToast("Error", "Failed to generate image.", "bad");
+          showToast("Error", "Failed to generate report image.", "bad");
         } finally {
-            // 5. Reset Button State
-            btn.disabled = false;
-            btnText.style.display = "inline";
-            btnLoading.style.display = "none";
-            reportArea.innerHTML = ""; // Clean up
+          btn.disabled = false;
+          btnText.style.display = "inline";
+          btnLoading.style.display = "none";
+          reportArea.innerHTML = "";
         }
-    }, 500); // Small delay to ensure browser paints the report div
-}  </script>
+      }, 500);
+    } // Small delay to ensure browser paints the report div
+  </script>
 <div id="fullReportCapture" style="position: absolute; left: -9999px; top: 0; width: 1200px; background: #0b1220;"></div>
 </body>
 
