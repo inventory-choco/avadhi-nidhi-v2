@@ -1334,9 +1334,10 @@ function computeAll(){
       // 5. Line 3: Loan Calculations (Calling separate function)
       const l = computeLoans();
 
-      // 6. Line 4: Fund Balance - THE GRAND FORMULA
-      // Total Gross Cash Received - Total Loans Issued + Outstanding Loans
-      const finalCash = mGrossPaidTill - l.totalLoanProvided + l.totalLoanOutstanding;
+      // 6. Line 4: Fund Balance - THE CORRECTED FORMULA
+      // Net Monthly Payments - Total Loans Issued + Total Loans Repaid
+      // (31,470 - 22,000 + 11,800 = 21,270)
+      const finalCash = mPaidTill - l.totalLoanProvided + l.totalLoanRepaid;
 
       computed = {
         members,
@@ -1349,7 +1350,7 @@ function computeAll(){
         mPaidTill,
         mOutTill: Math.max(0, mExpTill - mPaidTill),
         cExpMonth,
-        cPaidMonth: cExpMonth, // Auto-deducted
+        cPaidMonth: cExpMonth,
         cExpTill,
         cPaidTill: cExpTill,
         lProvided: l.totalLoanProvided,
