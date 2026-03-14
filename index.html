@@ -1,4 +1,4 @@
-Updated By 14-03-2026 12:45
+Updated: 14-03-2026 15:25
 
 <!doctype html>
 <html lang="en">
@@ -1696,10 +1696,22 @@ function renderMemberCard(name) {
       }
       const target = $("memberCardWrap");
 
-      try{
+      try {
+        // We calculate the full height and width of the content, not just the screen
         const canvas = await html2canvas(target, {
-          backgroundColor: null,
-          scale: Math.min(2, window.devicePixelRatio || 1)
+          backgroundColor: "#161f30", // Forces the dark background
+          scale: 2,                  // High resolution
+          useCORS: true,
+          logging: false,
+          // THE MOBILE FIX: Force capture of the full scrollable area
+          width: target.scrollWidth,
+          height: target.scrollHeight,
+          windowWidth: target.scrollWidth,
+          windowHeight: target.scrollHeight,
+          x: 0,
+          y: 0,
+          scrollX: 0,
+          scrollY: 0
         });
 
         const d = new Date();
@@ -1715,9 +1727,9 @@ function renderMemberCard(name) {
         link.remove();
 
         showToast("Snapshot saved", filename, "good");
-      }catch(err){
+      } catch(err) {
         console.error(err);
-        showToast("Snapshot failed", "Could not generate snapshot on this device/browser.", "bad");
+        showToast("Snapshot failed", "Could not generate full image.", "bad");
       }
     }
 
