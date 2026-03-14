@@ -1,4 +1,4 @@
-Updated By 14-03-2026 12:09
+Updated By 14-03-2026 12:29
 
 <!doctype html>
 <html lang="en">
@@ -1277,6 +1277,7 @@ function computeLoans() {
         });
       }
 
+      // Financial Sorting Logic
       const severity = (s) => s === "Overdue" ? 0 : s === "On Time" ? 1 : s === "Not Yet Due" ? 2 : s === "Cleared" ? 3 : 4;
       loansComputedRows.sort((a, b) => {
         const sa = severity(a.__rawStatus), sb = severity(b.__rawStatus);
@@ -1290,20 +1291,6 @@ function computeLoans() {
         totalLoanOutstanding: totalLoanProvided - totalLoanRepaid
       };
     }
-  // Sort by severity first, then name
-  const severity = (s) => s === "Overdue" ? 0 : s === "On Time" ? 1 : s === "Not Yet Due" ? 2 : s === "Cleared" ? 3 : 4;
-  loansComputedRows.sort((a, b) => {
-    const sa = severity(a.__rawStatus), sb = severity(b.__rawStatus);
-    if (sa !== sb) return sa - sb;
-    return String(a.Name).localeCompare(String(b.Name));
-  });
-
-  return {
-    totalLoanProvided,
-    totalLoanRepaid,
-    totalLoanOutstanding
-  };
-}
 
 
 function computeAll(){
