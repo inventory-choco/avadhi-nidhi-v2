@@ -1101,11 +1101,12 @@ function getLoanStatus(issueDateStr, balance) {
           warn(`No month columns detected in either CSV. Please use headers like "Jan-26".`);
         }
 
-        // Determine active month based on today and available columns
+       // Determine active month based on today and available columns
         determineActiveMonth();
 
-        // Compute everything + render
-        
+        // Compute everything + render (RE-ADDED THESE CALLS)
+        computeAll();
+        renderAll();
 
         // Populate member selectors
         populateMemberSelects();
@@ -1965,6 +1966,8 @@ function switchPaymentsYear(year){
 }
 
     document.addEventListener("DOMContentLoaded", () => {
+		// Start the loading process
+      loadAll(); 
       // Reload CSV: NEW cache-buster to force newest data (Chrome cache fix)
       $("btnReload").onclick = () => { cacheBuster = Date.now(); loadAll(); };
 
