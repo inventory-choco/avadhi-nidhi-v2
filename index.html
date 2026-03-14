@@ -177,6 +177,7 @@ Updated: 14-03-2026 15:25
     .dot.good{ background: var(--good); }
     .dot.warn{ background: var(--warn); }
     .dot.bad{ background: var(--bad); }
+	.dot.SahayaNidhi { background: var(--SahayaNidhi); }
 
     .section{
       padding: 14px;
@@ -1690,46 +1691,47 @@ function renderMemberCard(name) {
 
     async function takeMemberSnapshot(){
       const name = $("btnSnapshot").dataset.member;
-      if (!name){
+      if (!name) {
         showToast("Snapshot", "Select a member first.", "warn");
         return;
       }
+      
       const target = $("memberCardWrap");
+      showToast("Processing", "Generating high-quality image...", "info");
 
       try {
-        // We calculate the full height and width of the content, not just the screen
-        const canvas = await html2canvas(target, {
-          backgroundColor: "#161f30", // Forces the dark background
-          scale: 2,                  // High resolution
+        // Create a clone to fix mobile rendering issues
+        const clone = target.cloneNode(true);
+        clone.style.position = "fixed";
+        clone.style.left = "-9999px";
+        clone.style.top = "0";
+        clone.style.width = target.offsetWidth + "px";
+        document.body.appendChild(clone);
+
+        const canvas = await html2canvas(clone, {
+          backgroundColor: "#161f30",
+          scale: 3, // Higher scale for crystal clear text
           useCORS: true,
           logging: false,
-          // THE MOBILE FIX: Force capture of the full scrollable area
-          width: target.scrollWidth,
-          height: target.scrollHeight,
-          windowWidth: target.scrollWidth,
-          windowHeight: target.scrollHeight,
-          x: 0,
-          y: 0,
-          scrollX: 0,
-          scrollY: 0
+          width: target.offsetWidth,
+          height: target.offsetHeight
         });
 
+        document.body.removeChild(clone);
+
         const d = new Date();
-        // REQUIRED FORMAT: AvadhiNidhi_<MemberName>_<HH-MM-DD-MM-YY>.png
         const stamp = `${pad2(d.getHours())}-${pad2(d.getMinutes())}-${pad2(d.getDate())}-${pad2(d.getMonth()+1)}-${String(d.getFullYear()).slice(-2)}`;
         const filename = `AvadhiNidhi_${sanitizeFilePart(name)}_${stamp}.png`;
 
         const link = document.createElement("a");
         link.href = canvas.toDataURL("image/png");
         link.download = filename;
-        document.body.appendChild(link);
         link.click();
-        link.remove();
 
         showToast("Snapshot saved", filename, "good");
       } catch(err) {
         console.error(err);
-        showToast("Snapshot failed", "Could not generate full image.", "bad");
+        showToast("Snapshot failed", "Device compatibility error.", "bad");
       }
     }
 
