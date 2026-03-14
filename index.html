@@ -1,3 +1,5 @@
+Updated By 14-03-2026 12:09
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -1245,7 +1247,7 @@ function computeLoans() {
             status = "Cleared";
             badge = "badge-soft good";
           } else {
-            // Formula: Issue Date + 8 Months Deadline
+            // Algorithm: Issue Date + 8 Months Deadline
             const issueDate = parseDateDDMMYY(r["LOAN ISSUE DATE"]);
             if (issueDate) {
               const deadline = new Date(issueDate.getFullYear(), issueDate.getMonth() + 8, issueDate.getDate());
@@ -1276,6 +1278,14 @@ function computeLoans() {
           "__row": r
         });
       }
+
+      // Sort by severity first (Overdue first), then alphabetically by Name
+      const severity = (s) => s === "Overdue" ? 0 : s === "On Time" ? 1 : s === "Not Yet Due" ? 2 : s === "Cleared" ? 3 : 4;
+      loansComputedRows.sort((a, b) => {
+        const sa = severity(a.__rawStatus), sb = severity(b.__rawStatus);
+        if (sa !== sb) return sa - sb;
+        return String(a.Name).localeCompare(String(b.Name));
+      });
 
       return {
         totalLoanProvided,
