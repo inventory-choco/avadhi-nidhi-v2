@@ -1232,7 +1232,7 @@ function computeLoans() {
       for (const r of loanRows) {
         const loanAmt = safeNum(r["LOAN AMOUNT"]);
         const months = safeNum(r["AGREED TO REPAY IN (MONTHS)"]);
-        const repaid = sumMonths(r, allMonthKeys); // Sum of all months in Loan.csv
+        const repaid = sumMonths(r, allMonthKeys); 
         const bal = loanAmt > 0 ? (loanAmt - repaid) : 0;
         const emi = (loanAmt > 0 && months > 0) ? (loanAmt / months) : 0;
 
@@ -1247,12 +1247,10 @@ function computeLoans() {
             status = "Cleared";
             badge = "badge-soft good";
           } else {
-            // Algorithm: Issue Date + 8 Months Deadline
             const issueDate = parseDateDDMMYY(r["LOAN ISSUE DATE"]);
             if (issueDate) {
               const deadline = new Date(issueDate.getFullYear(), issueDate.getMonth() + 8, issueDate.getDate());
               const today = new Date();
-              
               if (today > deadline) {
                 status = "Overdue";
                 badge = "badge-soft bad";
@@ -1279,7 +1277,6 @@ function computeLoans() {
         });
       }
 
-      // Sort by severity first (Overdue first), then alphabetically by Name
       const severity = (s) => s === "Overdue" ? 0 : s === "On Time" ? 1 : s === "Not Yet Due" ? 2 : s === "Cleared" ? 3 : 4;
       loansComputedRows.sort((a, b) => {
         const sa = severity(a.__rawStatus), sb = severity(b.__rawStatus);
@@ -1293,7 +1290,6 @@ function computeLoans() {
         totalLoanOutstanding: totalLoanProvided - totalLoanRepaid
       };
     }
-
   // Sort by severity first, then name
   const severity = (s) => s === "Overdue" ? 0 : s === "On Time" ? 1 : s === "Not Yet Due" ? 2 : s === "Cleared" ? 3 : 4;
   loansComputedRows.sort((a, b) => {
@@ -2173,7 +2169,7 @@ async function generateFullWhatsAppReport() {
           reportArea.innerHTML = "";
         }
       }, 500);
-    } // Small delay to ensure browser paints the report div
+    } 
   </script>
 <div id="fullReportCapture" style="position: absolute; left: -9999px; top: 0; width: 1200px; background: #0b1220;"></div>
 </body>
