@@ -1634,14 +1634,16 @@ function renderMemberCard(name) {
       const r = paymentsCalcRows.find(p => p.Name === name);
       const l = loansComputedRows.find(lr => lr.Name === name);
       
-      // Algorithm: Individual Net = (OB + Gross Monthly Sum) - (SahayaNidhi Months Passed * 5)
+      // Treasury Math
       const grossTill = safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey);
       const netPaidTillDate = grossTill - (computed.SahayaNidhiMonthsPassed * 5);
 
-      // UI Values
-      const monthlyOB = 1400 + ((computed.mIdx - 1) * 100);
-      const currentPaidRaw = safeNum(r[activeMonthKey]);
-      const currentNet = Math.max(0, currentPaidRaw - 5);
+      // FIXED: Calculate Actual Monthly OB (Total paid BEFORE the current month)
+      const monthlyCurrentPaid = safeNum(r[activeMonthKey]);
+      const actualMonthlyOB = (safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey)) - monthlyCurrentPaid;
+      
+      // Paid this month (Net)
+      const currentNet = Math.max(0, monthlyCurrentPaid - 5);
       
       const SahayaNidhiOB = Math.max(0, (computed.mIdx - 3) * 5);
       const SahayaNidhiCurrent = 5;
@@ -1654,13 +1656,13 @@ function renderMemberCard(name) {
         <div class="table-responsive">
           <table class="report-table">
             <thead>
-              <tr><th colspan="2">Monthly</th><th colspan="2">SahayaNidhi</th><th colspan="4">Loan Details</th></tr>
-              <tr><th>OB</th><th>Current</th><th>OB</th><th>Current</th><th>Issued</th><th>Repaid</th><th>Balance</th><th>Status</th></tr>
+              <tr><th colspan="2">Monthly Payment</th><th colspan="2">SahayaNidhi</th><th colspan="4">Loan Details</th></tr>
+              <tr><th>OB</th><th>Paid</th><th>OB</th><th>Paid</th><th>Issued</th><th>Repaid</th><th>Balance</th><th>Status</th></tr>
             </thead>
             <tbody>
               <tr>
-                <td class="text-white fw-bold">${monthlyOB}</td>
-                <td class="text-white fw-bold">${currentNet}</td>
+                <td class="text-white fw-bold">${actualMonthlyOB}</td>
+                <td class="text-white fw-bold" style="color:${currentNet >= 100 ? 'var(--good)' : 'var(--bad)'}">${currentNet}</td>
                 <td class="text-white fw-bold">${SahayaNidhiOB}</td>
                 <td class="text-white fw-bold">${SahayaNidhiCurrent}</td>
                 <td>${l && l.__row ? l.__row["LOAN ISSUE DATE"] : "—"}</td>
@@ -1676,7 +1678,6 @@ function renderMemberCard(name) {
       snap.style.pointerEvents = "auto"; 
       snap.dataset.member = name;
     }
-
 
        // NEW: snapshot feature (PC + mobile)
     function sanitizeFilePart(s){
@@ -2117,10 +2118,11 @@ async function generateFullWhatsAppReport() {
       paymentsCalcRows.forEach(r => {
         const l = loansComputedRows.find(lr => lr.Name === r.Name);
         
-        // Treasury Formulas
-        const monthlyOB = 1400 + ((computed.mIdx - 1) * 100);
-        const currentPaidRaw = safeNum(r[activeMonthKey]);
-        const monthlyCurrent = Math.max(0, currentPaidRaw - 5);
+        // Treasury Formulas - FIXED Dynamic OB
+        const monthlyCurrentPaid = safeNum(r[activeMonthKey]);
+        const actualMonthlyOB = (safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey)) - monthlyCurrentPaid;
+        
+        const monthlyCurrent = Math.max(0, monthlyCurrentPaid - 5);
         
         const SahayaNidhiOB = Math.max(0, (computed.mIdx - 3) * 5);
         const SahayaNidhiCurrent = 5;
@@ -2131,7 +2133,7 @@ async function generateFullWhatsAppReport() {
         html += `
           <tr style="border-bottom: 1px solid #334155;">
             <td style="padding:12px; font-weight:bold; border:1px solid #334155;">${r.Name}</td>
-            <td style="text-align:center; border:1px solid #334155;">${monthlyOB}</td>
+            <td style="text-align:center; border:1px solid #334155;">${actualMonthlyOB}</td>
             <td style="text-align:center; border:1px solid #334155; color:${monthlyCurrent >= 100 ? '#1db954':'#ff5c5c'}">${monthlyCurrent}</td>
             <td style="text-align:center; border:1px solid #334155;">${SahayaNidhiOB}</td>
             <td style="text-align:center; border:1px solid #334155; color:#818cf8">5</td>
@@ -2174,7 +2176,8 @@ async function generateFullWhatsAppReport() {
           reportArea.innerHTML = "";
         }
       }, 500);
-    } 
+    }
+
   </script>
 <div id="fullReportCapture" style="position: absolute; left: -9999px; top: 0; width: 1200px; background: #0b1220;"></div>
 </body>
