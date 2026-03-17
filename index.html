@@ -2096,7 +2096,7 @@ async function generateFullWhatsAppReport() {
       };
 
       let html = `
-        <div style="padding:40px; color:white; font-family: 'Inter', sans-serif; background-color: #0b1220; width:1350px;">
+        <div style="padding:40px; color:white; font-family: 'Inter', sans-serif; background-color: #0b1220; width:1250px;">
           <div style="text-align:center; margin-bottom:30px;">
             <h1 style="color:#6ea8fe; margin:0; font-size:36px; font-weight:800;">Avadhi Nidhi</h1>
             <p style="color:#888; font-size:20px; margin:5px 0 0 0;">Monthly Status Report: <strong>${activeMonthKey}</strong></p>
@@ -2104,12 +2104,11 @@ async function generateFullWhatsAppReport() {
           <table class="report-table" style="width:100%; border-collapse: collapse; font-size: 14px; table-layout: fixed;">
             <thead>
               <tr>
-                <th rowspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155; width:180px;">Member Name</th>
+                <th rowspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155; width:200px;">Member Name</th>
                 <th colspan="3" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Monthly Payment (Net)</th>
                 <th colspan="3" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">SahayaNidhi Fund</th>
                 <th colspan="4" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Loan Tracking</th>
-                <th rowspan="2" style="background:#2d3748; color:#1db954; padding:12px; border:1px solid #334155; width:110px;">Grand Balance</th>
-                <th rowspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155; width:100px;">Status</th>
+                <th rowspan="2" style="background:#2d3748; color:#1db954; padding:12px; border:1px solid #334155; width:120px;">Grand Balance</th>
               </tr>
               <tr>
                 <th style="background:#0f172a; padding:10px; border:1px solid #334155;">OB</th>
@@ -2132,12 +2131,8 @@ async function generateFullWhatsAppReport() {
         // --- 1. Monthly Payment Calculations (NET) ---
         const monthlyRawPaidCurrent = safeNum(r[activeMonthKey]);
         const monthlyNetPaidCurrent = Math.max(0, monthlyRawPaidCurrent - 5);
-        
-        // Calculate Net Total Paid Till Date for this member
         const totalGrossTillDate = safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey);
         const totalNetTillDate = totalGrossTillDate - (computed.SahayaNidhiMonthsPassed * 5);
-        
-        // The "Report OB" is the Net Total minus the Net Current
         const actualNetMonthlyOB = totalNetTillDate - monthlyNetPaidCurrent;
         const monthlyNetTotal = totalNetTillDate;
 
@@ -2152,25 +2147,33 @@ async function generateFullWhatsAppReport() {
         const loanRepaid = l ? safeNum(l["Repaid"]) : 0;
         const loanBalance = l ? safeNum(l["Balance"]) : 0;
 
-        // --- 4. Grand Balance (Matches Dashboard Fund Balance Logic) ---
-        // Formula: Net Monthly Total - Loan Balance
+        // --- 4. Grand Balance ---
         const grandBalance = monthlyNetTotal - loanBalance;
 
-        // Update Global Sums for Footer
+        // Update Totals
         sums.mOB += actualNetMonthlyOB; sums.mPaid += monthlyNetPaidCurrent; sums.mTotal += monthlyNetTotal;
         sums.sOB += SahayaNidhiOB; sums.sPaid += SahayaNidhiCurrent; sums.sTotal += SahayaNidhiTotal;
         sums.lAmt += loanAmount; sums.lRepaid += loanRepaid; sums.lBal += loanBalance;
         sums.gBal += grandBalance;
 
-        const st = l ? l.__rawStatus : "No Loan";
-        const statusColor = st === "Overdue" ? "#ff5c5c" : (st === "On Time" || st === "Cleared" ? "#1db954" : "#f5c542");
-        
-        // Dynamic color for Grand Balance
+        // --- 5. Logic for Red Name (Passed 7 months) ---
+        let nameColor = "white";
+        if (loanBalance > 0 && loanIssued !== "—") {
+            const issueDate = parseDateDDMMYY(loanIssued);
+            const today = new Date();
+            if (issueDate) {
+                const monthsDiff = (today.getFullYear() - issueDate.getFullYear()) * 12 + (today.getMonth() - issueDate.getMonth());
+                if (monthsDiff > 7) {
+                    nameColor = "#ff5c5c"; // Bright Red
+                }
+            }
+        }
+
         const gBalColor = grandBalance >= 0 ? "#1db954" : "#ff5c5c";
 
         html += `
           <tr style="border-bottom: 1px solid #334155;">
-            <td style="padding:12px; font-weight:bold; border:1px solid #334155;">${r.Name}</td>
+            <td style="padding:12px; font-weight:bold; border:1px solid #334155; color:${nameColor};">${r.Name}</td>
             <td style="text-align:center; border:1px solid #334155;">${actualNetMonthlyOB}</td>
             <td style="text-align:center; border:1px solid #334155; color:${monthlyNetPaidCurrent >= 100 ? '#1db954':'#ff5c5c'}">${monthlyNetPaidCurrent}</td>
             <td style="text-align:center; border:1px solid #334155; font-weight:bold; color:#6ea8fe;">${monthlyNetTotal}</td>
@@ -2182,13 +2185,11 @@ async function generateFullWhatsAppReport() {
             <td style="text-align:center; border:1px solid #334155;">${loanAmount > 0 ? loanRepaid : '—'}</td>
             <td style="text-align:center; border:1px solid #334155;">${loanAmount > 0 ? loanBalance : '—'}</td>
             <td style="text-align:center; border:1px solid #334155; font-weight:800; color:${gBalColor}; background: rgba(255,255,255,0.02);">${grandBalance}</td>
-            <td style="text-align:center; border:1px solid #334155; color:${statusColor}; font-weight:bold; font-size:11px;">${st}</td>
           </tr>`;
       });
 
-      // Group Totals Row
       html += `
-            <tr style="height: 15px;"><td colspan="13"></td></tr>
+            <tr style="height: 15px;"><td colspan="12"></td></tr>
             <tr style="background: #1e293b; font-weight: 800; border-top: 2px solid #6ea8fe;">
               <td style="padding:12px; border:1px solid #334155; color:#6ea8fe;">GROUP TOTALS</td>
               <td style="text-align:center; border:1px solid #334155;">${sums.mOB}</td>
@@ -2202,7 +2203,6 @@ async function generateFullWhatsAppReport() {
               <td style="text-align:center; border:1px solid #334155;">${sums.lRepaid}</td>
               <td style="text-align:center; border:1px solid #334155;">${sums.lBal}</td>
               <td style="text-align:center; border:1px solid #334155; color:${sums.gBal >= 0 ? '#1db954' : '#ff5c5c'};">${sums.gBal}</td>
-              <td style="background:#0b1220; border:1px solid #334155;"></td>
             </tr>
           </tbody>
         </table>
@@ -2217,12 +2217,12 @@ async function generateFullWhatsAppReport() {
         try {
           const canvas = await html2canvas(reportArea, { backgroundColor: "#0b1220", scale: 2, useCORS: true });
           const link = document.createElement("a");
-          link.download = `AvadhiNidhi_FullReport_${activeMonthKey}.png`;
+          link.download = `AvadhiNidhi_FinalReport_${activeMonthKey}.png`;
           link.href = canvas.toDataURL("image/png");
           link.click();
-          showToast("Success", "Report synchronized with Dashboard.", "good");
+          showToast("Success", "Finalized report downloaded.", "good");
         } catch (e) {
-          showToast("Error", "Failed to generate report.", "bad");
+          showToast("Error", "Generation failed.", "bad");
         } finally {
           btn.disabled = false;
           btnText.style.display = "inline";
@@ -2230,8 +2230,7 @@ async function generateFullWhatsAppReport() {
           reportArea.innerHTML = "";
         }
       }, 600);
-    }
-  </script>
+    }  </script>
 <div id="fullReportCapture" style="position: absolute; left: -9999px; top: 0; width: 1200px; background: #0b1220;"></div>
 </body>
 
