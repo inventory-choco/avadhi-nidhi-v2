@@ -1,4 +1,4 @@
-Updated: 14-03-2026 15:25
+Updated: 17-03-2025 08:55PM
 
 <!doctype html>
 <html lang="en">
@@ -2083,34 +2083,45 @@ async function generateFullWhatsAppReport() {
 
       if (!reportArea) return;
 
-      // Show Loading State
       btn.disabled = true;
       btnText.style.display = "none";
       btnLoading.style.display = "inline";
 
+      // Initialize Column Totals
+      let sums = {
+        mOB: 0, mPaid: 0, mTotal: 0,
+        sOB: 0, sPaid: 0, sTotal: 0,
+        lAmt: 0, lRepaid: 0, lBal: 0,
+        gBal: 0
+      };
+
       let html = `
-        <div style="padding:40px; color:white; font-family: 'Inter', sans-serif; background-color: #0b1220; width:1200px;">
+        <div style="padding:40px; color:white; font-family: 'Inter', sans-serif; background-color: #0b1220; width:1350px;">
           <div style="text-align:center; margin-bottom:30px;">
-            <h1 style="color:#6ea8fe; margin:0; font-size:32px;">Avadhi Nidhi</h1>
-            <p style="color:#888; font-size:18px; margin:5px 0 0 0;">Monthly Status Report: <strong>${activeMonthKey}</strong></p>
+            <h1 style="color:#6ea8fe; margin:0; font-size:36px; font-weight:800;">Avadhi Nidhi</h1>
+            <p style="color:#888; font-size:20px; margin:5px 0 0 0;">Monthly Status Report: <strong>${activeMonthKey}</strong></p>
           </div>
-          <table class="report-table" style="width:100%; border-collapse: collapse; font-size: 14px;">
+          <table class="report-table" style="width:100%; border-collapse: collapse; font-size: 14px; table-layout: fixed;">
             <thead>
               <tr>
-                <th rowspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Member Name</th>
-                <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Monthly Payment</th>
-                <th colspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">SahayaNidhi Fund</th>
+                <th rowspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155; width:180px;">Member Name</th>
+                <th colspan="3" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Monthly Payment</th>
+                <th colspan="3" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">SahayaNidhi Fund</th>
                 <th colspan="4" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155;">Loan Tracking</th>
+                <th rowspan="2" style="background:#2d3748; color:#1db954; padding:12px; border:1px solid #334155; width:110px;">Grand Balance</th>
+                <th rowspan="2" style="background:#1e293b; color:#6ea8fe; padding:12px; border:1px solid #334155; width:100px;">Status</th>
               </tr>
               <tr>
                 <th style="background:#0f172a; padding:10px; border:1px solid #334155;">OB</th>
                 <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Paid</th>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155; color:#6ea8fe;">Total</th>
                 <th style="background:#0f172a; padding:10px; border:1px solid #334155;">OB</th>
                 <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Paid</th>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155; color:#818cf8;">Total</th>
+                <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Amount</th>
                 <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Issued</th>
                 <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Repaid</th>
                 <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Balance</th>
-                <th style="background:#0f172a; padding:10px; border:1px solid #334155;">Status</th>
               </tr>
             </thead>
             <tbody>`;
@@ -2118,55 +2129,87 @@ async function generateFullWhatsAppReport() {
       paymentsCalcRows.forEach(r => {
         const l = loansComputedRows.find(lr => lr.Name === r.Name);
         
-        // Treasury Formulas - FIXED Dynamic OB
+        // --- CALCULATIONS ---
         const monthlyCurrentPaid = safeNum(r[activeMonthKey]);
         const actualMonthlyOB = (safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey)) - monthlyCurrentPaid;
-        
         const monthlyCurrent = Math.max(0, monthlyCurrentPaid - 5);
-        
+        const monthlyTotal = actualMonthlyOB + monthlyCurrent;
+
         const SahayaNidhiOB = Math.max(0, (computed.mIdx - 3) * 5);
         const SahayaNidhiCurrent = 5;
+        const SahayaNidhiTotal = SahayaNidhiOB + SahayaNidhiCurrent;
 
-        const lStatusText = l ? l.__rawStatus : "No Loan";
-        const statusColor = lStatusText === "Overdue" ? "#ff5c5c" : (lStatusText === "Cleared" || lStatusText === "On Time" ? "#1db954" : "#f5c542");
+        const loanAmount = l ? safeNum(l["Loan Amount"]) : 0;
+        const loanIssued = l && l.__row ? l.__row["LOAN ISSUE DATE"] : "—";
+        const loanRepaid = l ? safeNum(l["Repaid"]) : 0;
+        const loanBalance = l ? safeNum(l["Balance"]) : 0;
+
+        // Formula: Monthly Total - SahayaNidhi Total - Loan Balance
+        const grandBalance = monthlyTotal - SahayaNidhiTotal - loanBalance;
+
+        // --- UPDATE SUMS ---
+        sums.mOB += actualMonthlyOB; sums.mPaid += monthlyCurrent; sums.mTotal += monthlyTotal;
+        sums.sOB += SahayaNidhiOB; sums.sPaid += SahayaNidhiCurrent; sums.sTotal += SahayaNidhiTotal;
+        sums.lAmt += loanAmount; sums.lRepaid += loanRepaid; sums.lBal += loanBalance;
+        sums.gBal += grandBalance;
+
+        const st = l ? l.__rawStatus : "No Loan";
+        const statusColor = st === "Overdue" ? "#ff5c5c" : (st === "On Time" || st === "Cleared" ? "#1db954" : "#f5c542");
 
         html += `
           <tr style="border-bottom: 1px solid #334155;">
             <td style="padding:12px; font-weight:bold; border:1px solid #334155;">${r.Name}</td>
             <td style="text-align:center; border:1px solid #334155;">${actualMonthlyOB}</td>
             <td style="text-align:center; border:1px solid #334155; color:${monthlyCurrent >= 100 ? '#1db954':'#ff5c5c'}">${monthlyCurrent}</td>
+            <td style="text-align:center; border:1px solid #334155; font-weight:bold; color:#6ea8fe;">${monthlyTotal}</td>
             <td style="text-align:center; border:1px solid #334155;">${SahayaNidhiOB}</td>
             <td style="text-align:center; border:1px solid #334155; color:#818cf8">5</td>
-            <td style="text-align:center; border:1px solid #334155; font-size:11px;">${l && l.__row ? l.__row["LOAN ISSUE DATE"] : "—"}</td>
-            <td style="text-align:center; border:1px solid #334155;">${l ? toMoney(l.Repaid, 0) : '—'}</td>
-            <td style="text-align:center; border:1px solid #334155;">${l ? toMoney(l.Balance, 0) : '—'}</td>
-            <td style="text-align:center; border:1px solid #334155; color:${statusColor}; font-weight:bold; font-size:11px;">${lStatusText}</td>
+            <td style="text-align:center; border:1px solid #334155; font-weight:bold; color:#818cf8;">${SahayaNidhiTotal}</td>
+            <td style="text-align:center; border:1px solid #334155;">${loanAmount > 0 ? loanAmount : '—'}</td>
+            <td style="text-align:center; border:1px solid #334155; font-size:11px;">${loanIssued}</td>
+            <td style="text-align:center; border:1px solid #334155;">${loanAmount > 0 ? loanRepaid : '—'}</td>
+            <td style="text-align:center; border:1px solid #334155;">${loanAmount > 0 ? loanBalance : '—'}</td>
+            <td style="text-align:center; border:1px solid #334155; font-weight:800; color:#1db954; background: rgba(29,185,84,0.05);">${grandBalance}</td>
+            <td style="text-align:center; border:1px solid #334155; color:${statusColor}; font-weight:bold; font-size:11px;">${st}</td>
           </tr>`;
       });
 
-      html += `</tbody></table>
-              <div style="margin-top:30px; text-align:right; font-size:12px; color:#555;">
-                Generated on: ${new Date().toLocaleString()} | Avadhi Nidhi System
-              </div>
-            </div>`;
+      // --- ADD TOTALS FOOTER WITH GAP ---
+      html += `
+            <!-- Spacing Row -->
+            <tr style="height: 15px;"><td colspan="13"></td></tr>
+            <tr style="background: #1e293b; font-weight: 800; border-top: 2px solid #6ea8fe;">
+              <td style="padding:12px; border:1px solid #334155; color:#6ea8fe;">GROUP TOTALS</td>
+              <td style="text-align:center; border:1px solid #334155;">${sums.mOB}</td>
+              <td style="text-align:center; border:1px solid #334155;">${sums.mPaid}</td>
+              <td style="text-align:center; border:1px solid #334155; color:#6ea8fe;">${sums.mTotal}</td>
+              <td style="text-align:center; border:1px solid #334155;">${sums.sOB}</td>
+              <td style="text-align:center; border:1px solid #334155;">${sums.sPaid}</td>
+              <td style="text-align:center; border:1px solid #334155; color:#818cf8;">${sums.sTotal}</td>
+              <td style="text-align:center; border:1px solid #334155;">${sums.lAmt}</td>
+              <td style="text-align:center; border:1px solid #334155; background:#0b1220;"></td>
+              <td style="text-align:center; border:1px solid #334155;">${sums.lRepaid}</td>
+              <td style="text-align:center; border:1px solid #334155;">${sums.lBal}</td>
+              <td style="text-align:center; border:1px solid #334155; color:#1db954;">${sums.gBal}</td>
+              <td style="background:#0b1220; border:1px solid #334155;"></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top:30px; text-align:right; font-size:12px; color:#555;">
+          Generated on: ${new Date().toLocaleString()} | Avadhi Nidhi System
+        </div>
+      </div>`;
           
       reportArea.innerHTML = html;
 
-      // Logic to convert to Image
       setTimeout(async () => {
         try {
-          const canvas = await html2canvas(reportArea, { 
-            backgroundColor: "#0b1220", 
-            scale: 2,
-            useCORS: true 
-          });
-          
+          const canvas = await html2canvas(reportArea, { backgroundColor: "#0b1220", scale: 2, useCORS: true });
           const link = document.createElement("a");
-          link.download = `AvadhiNidhi_Report_${activeMonthKey}.png`;
+          link.download = `AvadhiNidhi_FullReport_${activeMonthKey}.png`;
           link.href = canvas.toDataURL("image/png");
           link.click();
-          
-          showToast("Success", "Full report image downloaded.", "good");
+          showToast("Success", "Enhanced report downloaded.", "good");
         } catch (e) {
           showToast("Error", "Failed to generate report image.", "bad");
         } finally {
@@ -2175,7 +2218,7 @@ async function generateFullWhatsAppReport() {
           btnLoading.style.display = "none";
           reportArea.innerHTML = "";
         }
-      }, 500);
+      }, 600);
     }
 
   </script>
