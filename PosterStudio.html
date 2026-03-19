@@ -1,0 +1,610 @@
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Avadhi Nidhi — Smart Poster Studio</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&family=Gayathri:wght@700&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    :root{
+      --bg: #0b1220;
+      --SahayaNidhi: #818cf8;
+      --SahayaNidhi-bg: rgba(129, 140, 248, 0.1);
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.08);
+      --border: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --soft: rgba(255,255,255,.04);
+      --good: #1db954;
+      --warn: #f5c542;
+      --bad: #ff5c5c;
+      --accent: #6ea8fe;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { 
+      height: 100%; 
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% 0%, rgba(110,168,254,.25), transparent 60%),
+        radial-gradient(900px 500px at 90% 10%, rgba(245,197,66,.18), transparent 55%),
+        radial-gradient(800px 500px at 70% 90%, rgba(29,185,84,.12), transparent 55%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .container-xl{ max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    .glass{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 16px 60px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+    }
+    .glass2{
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .topbar{
+      padding: 16px 20px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 12px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:14px;
+    }
+    .brand img{
+      width: 54px; height: 54px; border-radius: 50%;
+      object-fit: cover; border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+    }
+    .brand-title h1{
+      margin:0; font-size: 1.35rem; font-weight: 800; letter-spacing: .2px;
+    }
+    .brand-title .sub{ margin-top: 4px; font-size: .9rem; color: var(--muted); }
+
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-size: .85rem;
+    }
+    .chip strong{ color: var(--text); font-weight: 600; }
+    .dot{
+      width: 8px; height: 8px; border-radius: 999px;
+      background: rgba(255,255,255,.25);
+    }
+    .dot.good{ background: var(--good); }
+    .dot.warn{ background: var(--warn); }
+    .dot.bad{ background: var(--bad); }
+    .dot.SahayaNidhi{ background: var(--SahayaNidhi); }
+
+    .btn-soft{
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 500;
+    }
+    .btn-primary{
+      background: linear-gradient(135deg, var(--accent), var(--good));
+      border: none;
+      color: white !important;
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-weight: 600;
+    }
+
+    .data-grid{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .data-card{
+      background: rgba(15,23,42,.9);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .data-card h3{
+      margin: 0 0 12px 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .member-list{
+      max-height: 300px;
+      overflow: auto;
+    }
+    .member-item{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .member-item:hover{
+      background: rgba(255,255,255,.05);
+      border-radius: 8px;
+      padding-left: 8px;
+    }
+    .member-item:last-child{ border-bottom: none; }
+    .member-name{ font-weight: 500; }
+    .member-balance{ font-weight: 600; font-size: .9rem; }
+
+    .poster-section{
+      background: rgba(15,23,42,.95);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    #poster-canvas{
+      width: 100%;
+      max-width: 380px;
+      margin: 0 auto;
+      background: #020617;
+      border: 14px solid #1e293b;
+      border-radius: 16px;
+      padding: 28px 20px 24px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 30px 90px rgba(0,0,0,.95);
+      font-family: 'Manjari', system-ui, sans-serif;
+    }
+    #poster-title{
+      font-size: 1.6rem;
+      font-weight: 700;
+      text-align: center;
+      color: #e5e7eb;
+      line-height: 1.3;
+    }
+    #poster-subtitle{
+      font-size: 1.1rem;
+      text-align: center;
+      color: #a5b4fc;
+      font-weight: 500;
+    }
+    #poster-body{
+      font-size: .95rem;
+      line-height: 1.7;
+      color: #d1d5db;
+      white-space: pre-wrap;
+    }
+    #poster-footer{
+      font-size: .85rem;
+      text-align: center;
+      color: #9ca3af;
+      border-top: 1px dashed rgba(148,163,184,.6);
+      padding-top: 12px;
+      margin-top: 8px;
+    }
+    #poster-stats{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+      font-size: .85rem;
+    }
+    .stat-item{
+      background: rgba(59,130,246,.15);
+      padding: 6px 10px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .smart-actions{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .btn-poster{
+      background: linear-gradient(135deg, var(--bad), var(--warn));
+      border: none;
+      color: white;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex: 1;
+      min-width: 200px;
+    }
+    .btn-poster:hover{ transform: translateY(-2px); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+    .btn-poster.good{ background: linear-gradient(135deg, var(--good), #10b981); }
+
+    .caption-box{
+      background: rgba(15,23,42,.9);
+      border: 1px dashed rgba(148,163,184,.6);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .caption-text{
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: .9rem;
+      width: 100%;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    @media (max-width: 768px){
+      .container-xl{ padding: 12px; }
+      #poster-canvas{ border-width: 10px; padding: 20px 16px; max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container-xl">
+    <!-- TOP BAR -->
+    <div class="glass topbar">
+      <div class="brand">
+        <img src="Images/an-Logo.png" alt="Avadhi Nidhi Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiM0RDQ5RkYiLz4KPHRleHQgeD0iMjUiIHk9IjMyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iSW50ZXIsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IndoaXRlIj5BTjwvdGV4dD4KPC9zdmc+'"/>
+        <div class="brand-title">
+          <h1>Smart Poster Studio</h1>
+          <div class="sub">AI-powered announcements from live data</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="index.html" class="btn-soft">← Dashboard</a>
+        <div class="chip">
+          <span class="dot good"></span>
+          <span>Live Data <strong id="dataStatus">Loading...</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATA ANALYSIS -->
+    <div class="glass p-4 mt-4">
+      <h2 style="margin:0 0 20px 0; color:var(--accent);">📊 Live Data Analysis</h2>
+      
+      <div class="data-grid" id="dataGrid">
+        <div class="data-card">
+          <h3><span class="dot good"></span>Current Month</h3>
+          <div><strong id="activeMonth">--</strong></div>
+          <div style="font-size:.85rem; color:var(--muted);">Expected: <span id="expectedMonth">--</span></div>
+          <div style="font-size:.85rem; color:var(--muted);">Outstanding: <span id="outstandingMonth">--</span></div>
+        </div>
+        
+        <div class="data-card">
+          <h3><span class="dot bad"></span>Unpaid This Month</h3>
+          <div class="member-list" id="unpaidList"></div>
+          <div style="font-size:.85rem; color:var(--bad);" id="unpaidCount">-- members</div>
+        </div>
+
+        <div class="data-card">
+          <h3><span class="dot warn"></span>Top Defaulters</h3>
+          <div class="member-list" id="defaultersList"></div>
+          <div style="font-size:.85rem; color:var(--warn);" id="defaultersCount">-- members</div>
+        </div>
+
+        <div class="data-card">
+          <h3><span class="dot.SahayaNidhi"></span>Fund Status</h3>
+          <div style="font-size:1.4rem; font-weight:800; color:var(--good);" id="fundBalance">--</div>
+          <div style="font-size:.85rem; color:var(--muted);" id="sahayaStatus">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SMART POSTER ACTIONS -->
+    <div class="glass p-4 mt-4">
+      <h2 style="margin:0 0 20px 0; color:var(--accent);">🤖 Smart Posters (One Click)</h2>
+      <div class="smart-actions">
+        <button class="btn-poster bad" onclick="generatePoster('monthly-unpaid')">
+          📢 Monthly Payment Reminder (All Unpaid)
+        </button>
+        <button class="btn-poster warn" onclick="generatePoster('top-defaulters')">
+          ⚠️ Top 5 Defaulters Alert
+        </button>
+        <button class="btn-poster.SahayaNidhi" style="background:linear-gradient(135deg, var(--SahayaNidhi), #6366f1);" onclick="generatePoster('sahaya-reminder')">
+          💜 SahayaNidhi Reminder
+        </button>
+        <button class="btn-poster good" onclick="generatePoster('fund-update')">
+          💰 Fund Balance Update
+        </button>
+        <button class="btn-poster" onclick="generatePoster('general-reminder')">
+          👋 General Reminder
+        </button>
+      </div>
+    </div>
+
+    <!-- POSTER PREVIEW -->
+    <div class="poster-section">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h3 style="margin:0; color:var(--accent);">🖼️ Live Preview</h3>
+        <div>
+          <button class="btn-soft" onclick="downloadPoster()" style="margin-right:8px;">⬇ Download HD</button>
+          <button class="btn-primary" onclick="copyWhatsApp()">📱 Copy WhatsApp Post</button>
+        </div>
+      </div>
+      
+      <div style="text-align:center; margin-bottom:16px;">
+        <select id="posterSize" onchange="resizePoster()" style="background:rgba(255,255,255,.1); border:1px solid var(--border); color:var(--text); padding:8px 12px; border-radius:8px;">
+          <option value="story">WhatsApp Status (9:16)</option>
+          <option value="square">Square</option>
+          <option value="a4">A4 Print</option>
+        </select>
+      </div>
+
+      <div id="poster-canvas" class="layout-story">
+        <div id="poster-title">AVADHI NIDHI</div>
+        <div id="poster-subtitle">Loading smart announcement...</div>
+        <div id="poster-stats"></div>
+        <div id="poster-body">Click any Smart Poster button above to generate</div>
+        <div id="poster-footer">കോർഡിനേറ്റേഴ്സ് – Avadhi Nidhi | 2026</div>
+      </div>
+
+      <div class="caption-box">
+        <div style="font-size:.8rem; color:var(--muted); margin-bottom:8px;">📝 WhatsApp Caption (auto-generated)</div>
+        <textarea class="caption-text" id="whatsappCaption" readonly placeholder="Caption will appear here..."></textarea>
+      </div>
+    </div>
+  </div>
+
+<script>
+let dashboardData = {
+  activeMonth: '',
+  expectedMonth: 0,
+  outstandingMonth: 0,
+  unpaidMembers: [],
+  topDefaulters: [],
+  fundBalance: 0,
+  totalMembers: 0,
+  sahayaMonths: 0
+};
+
+async function loadDashboardData() {
+  try {
+    // Method 1: Try to access dashboard global variables (if opened in same session)
+    if (window.parent !== window && window.parent.computed) {
+      const parentData = window.parent.computed;
+      dashboardData.totalMembers = parentData.members || 0;
+      dashboardData.fundBalance = parentData.fundBalance || 0;
+      dashboardData.activeMonth = window.parent.activeMonthKey || 'Mar-26';
+    }
+
+    // Method 2: Parse live DOM elements from dashboard
+    const elements = {
+      activeMonth: document.getElementById('activeMonthLabel')?.textContent || 'Mar-26',
+      expectedMonth: parseFloat(document.getElementById('mExpMonth')?.textContent || 0),
+      outstandingMonth: parseFloat(document.getElementById('mOutMonth')?.textContent || 0),
+      totalMembers: parseInt(document.getElementById('kpiMembers')?.textContent || 0),
+      fundBalance: parseFloat(document.getElementById('finalCash')?.textContent || 0)
+    };
+
+    // Method 3: Analyze payments table for unpaid members
+    const paymentsTable = document.querySelector('#paymentsTable tbody');
+    if (paymentsTable) {
+      const rows = Array.from(paymentsTable.querySelectorAll('tr'));
+      const activeMonthCol = document.getElementById('activeMonthLabel')?.textContent?.trim() || 'Mar-26';
+      
+      dashboardData.unpaidMembers = rows
+        .map((row, idx) => {
+          const cells = row.querySelectorAll('td');
+          if (cells.length < 3) return null;
+          
+          const sn = cells[0]?.textContent?.trim() || '';
+          const name = cells[1]?.textContent?.trim() || '';
+          const activeCell = Array.from(row.querySelectorAll('td')).find(cell => 
+            cell.textContent?.includes(activeMonthCol)
+          );
+          
+          const amount = parseFloat(activeCell?.textContent || 0);
+          if (!name || amount === 0) {
+            return { sn, name, balance: 100, type: 'unpaid-month' };
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .slice(0, 10);
+
+      // Calculate top defaulters (simplified - based on empty recent months)
+      dashboardData.topDefaulters = dashboardData.unpaidMembers.slice(0, 5);
+    }
+
+    // Update display
+    document.getElementById('dataStatus').textContent = 'Live';
+    document.getElementById('activeMonth').textContent = elements.activeMonth;
+    document.getElementById('expectedMonth').textContent = `AED ${elements.expectedMonth?.toLocaleString() || 0}`;
+    document.getElementById('outstandingMonth').textContent = `AED ${elements.outstandingMonth?.toLocaleString() || 0}`;
+    document.getElementById('fundBalance').textContent = `AED ${elements.fundBalance?.toLocaleString() || 0}`;
+    
+    document.getElementById('unpaidCount').textContent = `${dashboardData.unpaidMembers.length} members`;
+    document.getElementById('defaultersCount').textContent = `${dashboardData.topDefaulters.length} members`;
+    
+    renderMemberLists();
+    dashboardData.sahayaMonths = getSahayaMonths(elements.activeMonth);
+
+  } catch (e) {
+    document.getElementById('dataStatus').textContent = 'Fallback';
+    // Fallback demo data
+    dashboardData = {
+      activeMonth: 'Mar-26',
+      expectedMonth: 2300,
+      outstandingMonth: 900,
+      unpaidMembers: [
+        { sn: '001', name: 'Ahmed K', balance: 100, type: 'unpaid-month' },
+        { sn: '005', name: 'Raju M', balance: 100, type: 'unpaid-month' },
+        { sn: '012', name: 'Suresh K', balance: 100, type: 'unpaid-month' }
+      ],
+      topDefaulters: [
+        { sn: '001', name: 'Ahmed K', balance: 300, type: 'defaulter' },
+        { sn: '005', name: 'Raju M', balance: 200, type: 'defaulter' }
+      ],
+      fundBalance: 12500,
+      totalMembers: 25,
+      sahayaMonths: 1
+    };
+    renderMemberLists();
+  }
+}
+
+function getSahayaMonths(monthKey) {
+  const months = { 'Jan-26': 0, 'Feb-26': 0, 'Mar-26': 1, 'Apr-26': 2 };
+  return months[monthKey] || 0;
+}
+
+function renderMemberLists() {
+  const unpaidList = document.getElementById('unpaidList');
+  unpaidList.innerHTML = dashboardData.unpaidMembers.map(m => 
+    `<div class="member-item" onclick="selectMember('${m.sn}')">
+      <div>
+        <div class="member-name">${m.name}</div>
+        <div style="font-size:.8rem; color:var(--muted);">${m.sn}</div>
+      </div>
+      <div class="member-balance" style="color:var(--bad);">AED ${m.balance}</div>
+    </div>`
+  ).join('');
+
+  const defaultersList = document.getElementById('defaultersList');
+  defaultersList.innerHTML = dashboardData.topDefaulters.map(m => 
+    `<div class="member-item" onclick="selectMember('${m.sn}')">
+      <div>
+        <div class="member-name">${m.name}</div>
+        <div style="font-size:.8rem; color:var(--muted);">${m.sn}</div>
+      </div>
+      <div class="member-balance" style="color:var(--warn);">AED ${m.balance}</div>
+    </div>`
+  ).join('');
+}
+
+let currentPosterType = '';
+function generatePoster(type) {
+  currentPosterType = type;
+  
+  const templates = {
+    'monthly-unpaid': {
+      title: '🚨 മാസതുക ഓർമ്മപ്പുറം',
+      subtitle: `${dashboardData.activeMonth} - ${dashboardData.unpaidMembers.length} അംഗങ്ങൾ അഡ്വാൻസ് അടങ്ങിയില്ല`,
+      body: `പ്രിയ അംഗങ്ങൾ,\n\n${dashboardData.activeMonth} ൽ AED 100 സംഭാവന ഇതുവരെ നൽകാത്ത അംഗങ്ങൾ:\n\n${dashboardData.unpaidMembers.slice(0,8).map(m=>`• ${m.name} (${m.sn})`).join('\n')}\n\nദയവായി ഈ ആഴ്ചയ്ക്കുള്ളിൽ കോർഡിനേറ്റർമാരിലൂടെ അടയ്ക്കുക.\nസഹകരണങ്ങൾക്ക് നന്ദി 🙏`,
+      stats: [
+        `Unpaid: ${dashboardData.unpaidMembers.length}`,
+        `Outstanding: AED ${dashboardData.outstandingMonth?.toLocaleString()}`,
+        `Total Members: ${dashboardData.totalMembers}`
+      ]
+    },
+    
+    'top-defaulters': {
+      title: '⚠️ ഏറ്റവും കൂടുതൽ ബാക്കി',
+      subtitle: 'Top 5 Defaulters - Immediate Attention',
+      body: `ശ്രദ്ധിക്കുക:\n\nഏറ്റവും കൂടുതൽ ബാക്കിയുള്ള അംഗങ്ങൾ:\n\n${dashboardData.topDefaulters.map((m, i)=>`${i+1}. ${m.name} (${m.sn}) - AED ${m.balance}`).join('\n')}\n\nദയവായി ഉടൻ തന്നെ ബാക്കി തുക അടയ്ക്കുക.\nകൂടുതൽ വിവരങ്ങൾക്ക് കോർഡിനേറ്റർമാരെ ബന്ധപ്പെടുക.`,
+      stats: ['Top 5', 'Urgent', 'Action Needed']
+    },
+
+    'sahaya-reminder': {
+      title: '💜 SAHAYANIDHI',
+      subtitle: `AED 5 × ${dashboardData.sahayaMonths} months = AED ${dashboardData.sahayaMonths * 5}`,
+      body: `പ്രിയ അംഗങ്ങൾ,\n\n${dashboardData.activeMonth} മുതൽ SahayaNidhi AED 5/മാസം ആരംഭിച്ചു.\n\nഈ മാസം:\n• Avadhi Nidhi: AED 100\n• SahayaNidhi: AED 5\n───────────────\n• Total: AED 105\n\nSahayaNidhi ഫണ്ട് ആവശ്യക്കാർക്ക് സഹായമായി വിതരണം ചെയ്യും.\nനിങ്ങളുടെ സഹകരണത്തിന് നന്ദി 🙏`,
+      stats: [`Total: AED ${(dashboardData.sahayaMonths * 5 * dashboardData.totalMembers).toLocaleString()}`, 'SahayaNidhi', `${dashboardData.sahayaMonths} months`]
+    },
+
+    'fund-update': {
+      title: '💰 FUND UPDATE',
+      subtitle: `Cash In Hand: AED ${dashboardData.fundBalance?.toLocaleString()}`,
+      body: `നിലവിലെ സ്ഥിതി (${dashboardData.activeMonth}):\n\n💵 Fund Balance: AED ${dashboardData.fundBalance?.toLocaleString()}\n📊 Expected: AED ${dashboardData.expectedMonth?.toLocaleString()}\n❌ Outstanding: AED ${dashboardData.outstandingMonth?.toLocaleString()}\n👥 Total Members: ${dashboardData.totalMembers}\n\nഎല്ലാവരുടെയും സഹകരണത്തോടെ ഞങ്ങളുടെ ഫണ്ട് വളരുന്നു!\nഹൃദയപൂർവ്വം,\nAvadhi Nidhi Team`,
+      stats: [
+        `AED ${dashboardData.fundBalance?.toLocaleString()}`,
+        `${dashboardData.totalMembers} members`,
+        dashboardData.activeMonth
+      ]
+    },
+
+    'general-reminder': {
+      title: '👋 സൗഹൃദ ഓർമ്മപ്പുറം',
+      subtitle: `${dashboardData.activeMonth} - എല്ലാവർക്കും',
+      body: `പ്രിയ Avadhi Nidhi കുടുംബം,\n\nനിങ്ങളുടെ സ്ഥിരം സഹകരണത്തിന് ഹൃദയം നിറഞ്ഞ നന്ദി.\n\n📋 പ്രധാന പോയിന്റുകൾ:\n• മാസം AED 100 (Avadhi Nidhi)\n• AED 5 (SahayaNidhi - Mar-26 മുതൽ)\n• വായ്പ: AED 2500 വരെ (5 മാസം EMI)\n\nഎന്തെങ്കിലും സംശയങ്ങൾക്ക് നേരിട്ട് message ചെയ്യുക.\n\nനിങ്ങളുടെ സഹോദരങ്ങൾ,\nAvadhi Nidhi Team 🙏`,
+      stats: ['Regular', 'Friendly', 'Reminder']
+    }
+  };
+
+  const template = templates[type];
+  if (template) {
+    document.getElementById('poster-title').textContent = template.title;
+    document.getElementById('poster-subtitle').textContent = template.subtitle;
+    document.getElementById('poster-body').textContent = template.body;
+    document.getElementById('poster-footer').textContent = 'കോർഡിനേറ്റേഴ്സ് – Avadhi Nidhi | 2026';
+    
+    document.getElementById('poster-stats').innerHTML = template.stats.map(stat => 
+      `<div class="stat-item">${stat}</div>`
+    ).join('');
+    
+    document.getElementById('whatsappCaption').value = `${template.title}\n\n${template.body}\n\n${dashboardData.activeMonth} | Avadhi Nidhi Dashboard → posterstudio.html`;
+  }
+}
+
+function resizePoster() {
+  const canvas = document.getElementById('poster-canvas');
+  const size = document.getElementById('posterSize').value;
+  canvas.className = `layout-${size}`;
+}
+
+function downloadPoster() {
+  const canvas = document.getElementById('poster-canvas');
+  html2canvas(canvas, { 
+    scale: 3, 
+    backgroundColor: '#020617',
+    useCORS: true 
+  }).then(c => {
+    const link = document.createElement('a');
+    link.download = `AvadhiNidhi_${currentPosterType}_${dashboardData.activeMonth || 'Announcement'}.png`;
+    link.href = c.toDataURL('image/png');
+    link.click();
+  });
+}
+
+function copyWhatsApp() {
+  const caption = document.getElementById('whatsappCaption');
+  caption.select();
+  document.execCommand('copy');
+  // Visual feedback
+  const original = caption.style.background;
+  caption.style.background = 'rgba(34,197,94,.3)';
+  setTimeout(() => caption.style.background = original, 1000);
+}
+
+function selectMember(sn) {
+  // Highlight selected member in lists
+  document.querySelectorAll('.member-item').forEach(item => {
+    item.style.background = '';
+  });
+  // Future: generate personalized poster for this member
+  generatePoster('monthly-unpaid');
+}
+
+// INIT
+document.addEventListener('DOMContentLoaded', () => {
+  loadDashboardData();
+  setInterval(loadDashboardData, 30000); // Refresh every 30s
+  document.getElementById('posterSize').value = 'story';
+});
+</script>
+</body>
+</html>
+```
