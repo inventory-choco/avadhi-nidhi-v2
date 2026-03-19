@@ -217,84 +217,98 @@ let dashboardData = {
   unpaidMembers: [], topDefaulters: [], fundBalance: 0, sahayaMonths: 0
 };
 
-const SahayaNidhi_START_MONTH = 'Mar-26';
-const MONTHNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Helper to check if a header is a month (e.g., "Jan-26")
+const isMonthKey = (k) => /^[A-Za-z]{3}-\d{2}$/.test(k.trim());
 
 async function loadData() {
+  console.log("Starting data load...");
   document.body.classList.add('loading');
-  document.getElementById('dataStatus').textContent = 'Loading CSVs...';
-  document.getElementById('dataDot').className = 'dot';
-
+  document.getElementById('dataStatus').textContent = 'Connecting to CSV...';
+  
   try {
-    // Fetch ALL your CSV files directly
-    const [payments2026, payments2025, loans] = await Promise.all([
-      fetch('2026_payments.csv?' + Date.now()).then(r => r.text()),
-      fetch('2025_payments.csv?' + Date.now()).then(r => r.text()).catch(() => ''),
-      fetch('Loan.csv?' + Date.now()).then(r => r.text()).catch(() => '')
+    const cacheBuster = Date.now();
+    const [paymentsRes, loansRes] = await Promise.all([
+      fetch(`2026_payments.csv?v=${cacheBuster}`),
+      fetch(`Loan.csv?v=${cacheBuster}`)
     ]);
 
-    // Parse with PapaParse
-    const payments2026Data = Papa.parse(payments2026, { header: true, skipEmptyLines: true }).data;
-    const payments2025Data = payments2025 ? Papa.parse(payments2025, { header: true, skipEmptyLines: true }).data : [];
-    const loansData = loans ? Papa.parse(loans, { header: true, skipEmptyLines: true }).data : [];
+    if (!paymentsRes.ok) throw new Error("Could not find 2026_payments.csv");
 
-    dashboardData.payments = [...payments2026Data, ...payments2025Data].filter(row => row.SN && row.Name);
-    dashboardData.loans = loansData.filter(row => row.SN && row.Name);
-    
+    const pRaw = await paymentsRes.text();
+    const lRaw = await loansRes.text();
+
+    const pData = Papa.parse(pRaw, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() }).data;
+    const lData = Papa.parse(lRaw, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() }).data;
+
+    dashboardData.payments = pData.filter(row => row.Name && row.SN);
+    dashboardData.loans = lData.filter(row => row.Name && row.SN);
     dashboardData.totalMembers = dashboardData.payments.length;
-    
-    // Find active month (current month)
-    const now = new Date();
-    const currentMonthKey = `${MONTHNames[now.getMonth()]}-${(now.getFullYear() % 100).toString().padStart(2,'0')}`;
-    dashboardData.activeMonth = currentMonthKey;
 
-    // Analyze unpaid members
+    // --- SMART MONTH DETECTION ---
+    // Look at the columns in the CSV to find the latest month available
+    const allHeaders = Object.keys(pData[0] || {});
+    const monthColumns = allHeaders.filter(isMonthKey);
+    
+    // Sort columns to find the latest one
+    monthColumns.sort((a, b) => {
+        const parse = (s) => {
+            const [m, y] = s.split('-');
+            return new Date(2000 + parseInt(y), MONTH_NAMES.indexOf(m), 1);
+        };
+        return parse(a) - parse(b);
+    });
+
+    // Set the active month to the latest column found in CSV
+    dashboardData.activeMonth = monthColumns[monthColumns.length - 1] || "None";
+    console.log("Detected Active Month from CSV:", dashboardData.activeMonth);
+
+    // --- CALCULATIONS ---
     dashboardData.unpaidMembers = [];
     dashboardData.payments.forEach(row => {
-      const amount = parseFloat(row[currentMonthKey] || 0);
-      if (amount === 0 || isNaN(amount)) {
+      const val = parseFloat(row[dashboardData.activeMonth] || 0);
+      // If payment minus SahayaNidhi(5) is less than 100, they are unpaid
+      if ((val - 5) < 100) {
         dashboardData.unpaidMembers.push({
-          sn: row.SN, name: row.Name, balance: 100, type: 'unpaid-month'
+          sn: row.SN, name: row.Name, balance: 100 - Math.max(0, val - 5)
         });
       }
     });
 
-    // Top defaulters (last 3 months balance)
-    dashboardData.topDefaulters = dashboardData.payments
-      .map(row => {
-        let balance = 0;
-        for(let i = 0; i < 3; i++) {
-          const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const monthKey = `${MONTHNames[monthDate.getMonth()]}-${(monthDate.getFullYear() % 100).toString().padStart(2,'0')}`;
-          balance += parseFloat(row[monthKey] || 0);
-        }
-        return { sn: row.SN, name: row.Name, balance: 300 - balance, type: 'defaulter' };
-      })
-      .filter(d => d.balance > 0)
-      .sort((a,b) => b.balance - a.balance)
-      .slice(0, 5);
+    // Calculate Cash in Hand (Gross Paid - Loans Provided + Loans Repaid)
+    let totalGrossPaid = 0;
+    dashboardData.payments.forEach(r => {
+        totalGrossPaid += parseFloat(r.OB || 0);
+        monthColumns.forEach(m => totalGrossPaid += parseFloat(r[m] || 0));
+    });
 
-    // Calculate fund balance (simplified)
-    const totalPaid = dashboardData.payments.reduce((sum, row) => {
-      return sum + Object.values(row).reduce((s, v) => s + parseFloat(v || 0), 0);
-    }, 0);
-    dashboardData.fundBalance = Math.round(totalPaid * 0.8); // Estimate
+    let loansProvided = 0;
+    let loansRepaid = 0;
+    dashboardData.loans.forEach(l => {
+        loansProvided += parseFloat(l["LOAN AMOUNT"] || 0);
+        Object.keys(l).forEach(k => {
+            if(isMonthKey(k)) loansRepaid += parseFloat(l[k] || 0);
+        });
+    });
 
-    // SahayaNidhi months
-    const startDate = new Date(2026, 2, 1); // Mar-26
-    dashboardData.sahayaMonths = Math.max(0, Math.floor((now - startDate) / (1000 * 60 * 60 * 24 * 30)));
+    // Calculate SahayaNidhi (to subtract from fund note)
+    const mIdx = MONTH_NAMES.indexOf(dashboardData.activeMonth.split('-')[0]) + 1;
+    const sMonths = Math.max(0, mIdx - 2); // Starts Mar
+    const totalSahaya = dashboardData.totalMembers * sMonths * 5;
 
-    // Update UI
+    dashboardData.fundBalance = (totalGrossPaid - totalSahaya) - loansProvided + loansRepaid;
+    dashboardData.sahayaMonths = sMonths;
+
     updateDashboard();
     
-    document.getElementById('dataStatus').textContent = `Live (${dashboardData.totalMembers} members)`;
+    document.getElementById('dataStatus').textContent = `Live: ${dashboardData.activeMonth}`;
     document.getElementById('dataDot').className = 'dot good';
     
   } catch (error) {
-    console.error('CSV Load Error:', error);
-    document.getElementById('dataStatus').textContent = 'CSV Error - Check files';
+    console.error('Error in Studio:', error);
+    document.getElementById('dataStatus').textContent = 'Connection Failed';
     document.getElementById('dataDot').className = 'dot bad';
-    // Use demo data
     useDemoData();
   } finally {
     document.body.classList.remove('loading');
@@ -305,150 +319,87 @@ function updateDashboard() {
   document.getElementById('activeMonth').textContent = dashboardData.activeMonth;
   document.getElementById('expectedMonth').textContent = `AED ${dashboardData.totalMembers * 100}`;
   document.getElementById('outstandingMonth').textContent = `AED ${dashboardData.unpaidMembers.length * 100}`;
-  document.getElementById('fundBalance').textContent = `AED ${dashboardData.fundBalance.toLocaleString()}`;
-  document.getElementById('sahayaStatus').textContent = `AED 5 × ${dashboardData.sahayaMonths} months`;
-  
+  document.getElementById('fundBalance').textContent = `AED ${Math.round(dashboardData.fundBalance).toLocaleString()}`;
+  document.getElementById('sahayaStatus').textContent = `SahayaNidhi Deduction: AED ${dashboardData.sahayaMonths * 5 * dashboardData.totalMembers}`;
   document.getElementById('unpaidCount').textContent = `${dashboardData.unpaidMembers.length} members`;
-  document.getElementById('defaultersCount').textContent = `${dashboardData.topDefaulters.length} members`;
   
-  renderMemberLists();
-}
+  // Update the text on the buttons that was showing ${...}
+  const unpaidBtn = document.querySelector('.btn-poster.bad');
+  if(unpaidBtn) unpaidBtn.textContent = `📢 Monthly Unpaid (${dashboardData.unpaidMembers.length})`;
 
-function renderMemberLists() {
-  document.getElementById('unpaidList').innerHTML = dashboardData.unpaidMembers.slice(0,8).map(m => 
-    `<div class="member-item" onclick="selectMember('${m.sn}')">
-      <div><div class="member-name">${m.name}</div><div style="font-size:.8rem;color:var(--muted);">${m.sn}</div></div>
+  // Render Unpaid List
+  document.getElementById('unpaidList').innerHTML = dashboardData.unpaidMembers.slice(0,10).map(m => 
+    `<div class="member-item">
+      <div><div class="member-name">${m.name}</div><div style="font-size:.7rem;color:var(--muted);">SN: ${m.sn}</div></div>
       <div class="member-balance" style="color:var(--bad);">AED ${m.balance}</div>
     </div>`
   ).join('');
-
-  document.getElementById('defaultersList').innerHTML = dashboardData.topDefaulters.map(m => 
-    `<div class="member-item" onclick="selectMember('${m.sn}')">
-      <div><div class="member-name">${m.name}</div><div style="font-size:.8rem;color:var(--muted);">${m.sn}</div></div>
-      <div class="member-balance" style="color:var(--warn);">AED ${m.balance}</div>
-    </div>`
-  ).join('');
 }
 
-function useDemoData() {
-  dashboardData = {
-    activeMonth: 'Mar-26',
-    totalMembers: 25,
-    unpaidMembers: [
-      {sn:'001', name:'Ahmed K', balance:100},
-      {sn:'005', name:'Raju M', balance:100},
-      {sn:'012', name:'Suresh K', balance:100}
-    ],
-    topDefaulters: [
-      {sn:'001', name:'Ahmed K', balance:300},
-      {sn:'005', name:'Raju M', balance:200}
-    ],
-    fundBalance: 12500,
-    sahayaMonths: 1
-  };
-  updateDashboard();
-}
-
-let currentPosterType = '';
 function generatePoster(type) {
-  currentPosterType = type;
-  const templates = {
-    'monthly-unpaid': {
-      title: '🚨 മാസതുക ഓർമ്മപ്പുറം',
-      subtitle: `${dashboardData.activeMonth} - ${dashboardData.unpaidMembers.length} അംഗങ്ങൾ`,
-      body: `${dashboardData.unpaidMembers.slice(0,8).map(m=>`• ${m.name} (${m.sn})`).join('
-')}
-
-ദയവായി ഈ ആഴ്ചയ്ക്കുള്ളിൽ AED 100 അടയ്ക്കുക.`,
-      stats: [`${dashboardData.unpaidMembers.length}`, `AED ${dashboardData.unpaidMembers.length*100}`, dashboardData.activeMonth]
-    },
-    'top-defaulters': {
-      title: '⚠️ ടോപ് ഡിഫോൾട്ടേഴ്സ്',
-      subtitle: 'ഏറ്റവും കൂടുതൽ ബാക്കി',
-      body: dashboardData.topDefaulters.map((m,i)=>`${i+1}. ${m.name} (${m.sn})
-AED ${m.balance}`).join('
-
-'),
-      stats: ['Top 5', 'Urgent', 'Action Needed']
-    },
-    'sahaya-reminder': {
-      title: '💜 SAHAYANIDHI',
-      subtitle: `AED 5 × ${dashboardData.sahayaMonths} = AED ${dashboardData.sahayaMonths*5*dashboardData.totalMembers}`,
-      body: `• Avadhi Nidhi: AED 100
-• SahayaNidhi: AED 5
-───────────
-• Total: AED 105
-
-SahayaNidhi ആവശ്യക്കാർക്ക് സഹായമായി വിതരണം ചെയ്യും.`,
-      stats: [`AED ${(dashboardData.sahayaMonths*5*dashboardData.totalMembers).toLocaleString()}`, 'SahayaNidhi', `${dashboardData.sahayaMonths} months`]
-    },
-    'fund-update': {
-      title: '💰 FUND UPDATE',
-      subtitle: `Cash Balance: AED ${dashboardData.fundBalance.toLocaleString()}`,
-      body: `${dashboardData.activeMonth}:
-💰 Fund: AED ${dashboardData.fundBalance.toLocaleString()}
-👥 Members: ${dashboardData.totalMembers}
-❌ Unpaid: ${dashboardData.unpaidMembers.length}`,
-      stats: [`AED ${dashboardData.fundBalance.toLocaleString()}`, `${dashboardData.totalMembers}`, dashboardData.activeMonth]
-    },
-    'general-reminder': {
-      title: '👋 സൗഹൃദ ഓർമ്മപ്പുറം',
-      subtitle: `${dashboardData.activeMonth}`,
-      body: `• AED 100/മാസം (Avadhi Nidhi)
-• AED 5 (SahayaNidhi)
-• 2500 AED വായ്പ (5 മാസം EMI)
-
-സഹകരണങ്ങൾക്ക് നന്ദി 🙏`,
-      stats: ['Regular', 'Friendly', 'All Members']
-    }
-  };
-
-  const template = templates[type];
-  if(template) {
-    document.getElementById('poster-title').textContent = template.title;
-    document.getElementById('poster-subtitle').textContent = template.subtitle;
-    document.getElementById('poster-body').textContent = template.body;
-    document.getElementById('poster-stats').innerHTML = template.stats.map(s=>`<div class="stat-item">${s}</div>`).join('');
-    document.getElementById('whatsappCaption').value = `${template.title}
-
-${template.body}
-
-#AvadhiNidhi #${dashboardData.activeMonth}`;
+  let title = '', subtitle = '', body = '', stats = [];
+  
+  if(type === 'monthly-unpaid') {
+      title = '🚨 PAYMENT REMINDER';
+      subtitle = `${dashboardData.activeMonth} Pending List`;
+      body = `Members with pending dues for ${dashboardData.activeMonth}:\n\n` + 
+             dashboardData.unpaidMembers.slice(0,12).map(m => `• ${m.name}`).join('\n') +
+             `\n\nTotal Pending: ${dashboardData.unpaidMembers.length} Members.`;
+      stats = [dashboardData.activeMonth, `Pending: ${dashboardData.unpaidMembers.length}`, 'AED 100'];
+  } 
+  else if(type === 'sahaya-reminder') {
+      title = '💜 SAHAYANIDHI';
+      subtitle = 'Support for a Cause';
+      body = `Reminder:\nMonthly Nidhi: AED 100\nSahayaNidhi: AED 5\nTotal: AED 105\n\nSahayaNidhi is used for helping members in need.`;
+      stats = ['AED 5', 'Monthly', 'Charity'];
   }
-}
+  else if(type === 'fund-update') {
+      title = '💰 CASH STATUS';
+      subtitle = 'Avadhi Nidhi Treasury';
+      body = `Current Cash in Hand:\nAED ${Math.round(dashboardData.fundBalance).toLocaleString()}\n\nMonth: ${dashboardData.activeMonth}\nMembers Paid: ${dashboardData.totalMembers - dashboardData.unpaidMembers.length}\nPending: ${dashboardData.unpaidMembers.length}`;
+      stats = [`AED ${Math.round(dashboardData.fundBalance)}`, 'Verified', dashboardData.activeMonth];
+  }
+  else {
+      title = '👋 AVADHI NIDHI';
+      subtitle = 'Friendly Reminder';
+      body = `General update for ${dashboardData.activeMonth}.\nPlease check the dashboard for your individual status.`;
+      stats = ['Active', '2026', 'Dashboard'];
+  }
 
-function resizePoster() {
-  document.getElementById('poster-canvas').className = `layout-${document.getElementById('posterSize').value}`;
+  document.getElementById('poster-title').textContent = title;
+  document.getElementById('poster-subtitle').textContent = subtitle;
+  document.getElementById('poster-body').textContent = body;
+  document.getElementById('poster-stats').innerHTML = stats.map(s=>`<div class="stat-item">${s}</div>`).join('');
+  document.getElementById('whatsappCaption').value = `*${title}*\n\n${body}\n\n_Generated by Avadhi Nidhi Studio_`;
 }
 
 function downloadPoster() {
-  html2canvas(document.getElementById('poster-canvas'), {scale:3, backgroundColor:'#020617'})
-    .then(canvas => {
+  const canvas = document.getElementById('poster-canvas');
+  showToast("Processing", "Generating image...");
+  html2canvas(canvas, {scale:3, backgroundColor:'#020617'}).then(cvs => {
       const link = document.createElement('a');
-      link.download = `AvadhiNidhi_${currentPosterType}_${dashboardData.activeMonth}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.download = `Avadhi_Poster_${dashboardData.activeMonth}.png`;
+      link.href = cvs.toDataURL();
       link.click();
-    });
+  });
 }
+
+function useDemoData() {
+  dashboardData.activeMonth = "No CSV Found";
+  dashboardData.unpaidMembers = [{name: "Check CSV filenames", sn: "!", balance: 0}];
+  updateDashboard();
+}
+
+function showToast(t, m) { console.log(t, m); } // Simplified
 
 function copyWhatsApp() {
   const caption = document.getElementById('whatsappCaption');
   caption.select();
   document.execCommand('copy');
-  const original = caption.style.background;
-  caption.style.background = 'rgba(34,197,94,.3)';
-  setTimeout(()=>caption.style.background=original, 1000);
+  alert("Caption copied!");
 }
 
-function selectMember(sn) {
-  generatePoster('monthly-unpaid');
-}
-
-// INIT
-document.addEventListener('DOMContentLoaded', () => {
-  loadData();
-  setInterval(loadData, 30000);
-});
+document.addEventListener('DOMContentLoaded', loadData);
 </script>
 </body>
 </html>
