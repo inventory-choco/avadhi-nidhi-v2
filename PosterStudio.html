@@ -245,7 +245,7 @@ async function loadData() {
     
     // Find active month (current month)
     const now = new Date();
-    const currentMonthKey = `${monthNames[now.getMonth()]}-${(now.getFullYear() % 100).toString().padStart(2,'0')}`;
+    const currentMonthKey = `${MONTHNames[now.getMonth()]}-${(now.getFullYear() % 100).toString().padStart(2,'0')}`;
     dashboardData.activeMonth = currentMonthKey;
 
     // Analyze unpaid members
@@ -265,7 +265,7 @@ async function loadData() {
         let balance = 0;
         for(let i = 0; i < 3; i++) {
           const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const monthKey = `${monthNames[monthDate.getMonth()]}-${(monthDate.getFullYear() % 100).toString().padStart(2,'0')}`;
+          const monthKey = `${MONTHNames[monthDate.getMonth()]}-${(monthDate.getFullYear() % 100).toString().padStart(2,'0')}`;
           balance += parseFloat(row[monthKey] || 0);
         }
         return { sn: row.SN, name: row.Name, balance: 300 - balance, type: 'defaulter' };
