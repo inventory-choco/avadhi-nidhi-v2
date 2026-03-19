@@ -214,77 +214,76 @@
 <script>
 let dashboardData = {
   payments: [], loans: [], activeMonth: '', totalMembers: 0,
-  unpaidMembers: [], topDefaulters: [], fundBalance: 0, sahayaMonths: 0
+  unpaidMembers: [], fundBalance: 0, sahayaTotal: 0
 };
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-// Helper to check if a header is a month (e.g., "Jan-26")
 const isMonthKey = (k) => /^[A-Za-z]{3}-\d{2}$/.test(k.trim());
 
 async function loadData() {
-  console.log("Starting data load...");
   document.body.classList.add('loading');
-  document.getElementById('dataStatus').textContent = 'Connecting to CSV...';
+  document.getElementById('dataStatus').textContent = 'Analyzing CSVs...';
   
   try {
     const cacheBuster = Date.now();
-    const [paymentsRes, loansRes] = await Promise.all([
+    const [pRes, lRes] = await Promise.all([
       fetch(`2026_payments.csv?v=${cacheBuster}`),
       fetch(`Loan.csv?v=${cacheBuster}`)
     ]);
 
-    if (!paymentsRes.ok) throw new Error("Could not find 2026_payments.csv");
-
-    const pRaw = await paymentsRes.text();
-    const lRaw = await loansRes.text();
+    const pRaw = await pRes.text();
+    const lRaw = await lRes.text();
 
     const pData = Papa.parse(pRaw, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() }).data;
     const lData = Papa.parse(lRaw, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() }).data;
 
-    dashboardData.payments = pData.filter(row => row.Name && row.SN);
-    dashboardData.loans = lData.filter(row => row.Name && row.SN);
+    // Filter out "TOTAL" row and empty rows
+    dashboardData.payments = pData.filter(row => row.SN && row.Name && row.Name !== 'TOTAL');
+    dashboardData.loans = lData.filter(row => row.Name && row.Name !== 'TOTAL');
     dashboardData.totalMembers = dashboardData.payments.length;
 
-    // --- SMART MONTH DETECTION ---
-    // Look at the columns in the CSV to find the latest month available
-    const allHeaders = Object.keys(pData[0] || {});
-    const monthColumns = allHeaders.filter(isMonthKey);
-    
-    // Sort columns to find the latest one
-    monthColumns.sort((a, b) => {
-        const parse = (s) => {
-            const [m, y] = s.split('-');
-            return new Date(2000 + parseInt(y), MONTH_NAMES.indexOf(m), 1);
-        };
-        return parse(a) - parse(b);
+    // 1. Determine Active Month
+    const monthCols = Object.keys(pData[0]).filter(isMonthKey);
+    monthCols.sort((a, b) => {
+        const p = (s) => { const [m, y] = s.split('-'); return new Date(2000 + parseInt(y), MONTH_NAMES.indexOf(m), 1); };
+        return p(a) - p(b);
     });
+    dashboardData.activeMonth = monthCols[monthCols.length - 1] || "Mar-26";
 
-    // Set the active month to the latest column found in CSV
-    dashboardData.activeMonth = monthColumns[monthColumns.length - 1] || "None";
-    console.log("Detected Active Month from CSV:", dashboardData.activeMonth);
-
-    // --- CALCULATIONS ---
+    // 2. Calculate Unpaid for Active Month
     dashboardData.unpaidMembers = [];
+    const isSahayaMonth = (m) => {
+        const d = m.split('-'); 
+        return (d[1] === '26' && MONTH_NAMES.indexOf(d[0]) >= 2); // Mar-26 onwards
+    };
+
     dashboardData.payments.forEach(row => {
       const val = parseFloat(row[dashboardData.activeMonth] || 0);
-      // If payment minus SahayaNidhi(5) is less than 100, they are unpaid
-      if ((val - 5) < 100) {
+      const expected = isSahayaMonth(dashboardData.activeMonth) ? 105 : 100;
+      
+      if (val < expected) {
         dashboardData.unpaidMembers.push({
-          sn: row.SN, name: row.Name, balance: 100 - Math.max(0, val - 5)
+          sn: row.SN, name: row.Name, balance: expected - val
         });
       }
     });
 
-    // Calculate Cash in Hand (Gross Paid - Loans Provided + Loans Repaid)
-    let totalGrossPaid = 0;
+    // 3. TREASURY MATH (Matching your Dashboard exactly)
+    let totalGrossPaid = 0; // Will equal 31,565 based on your CSV
+    let sahayaCollected = 0; // Should be 95 (19 members * 5)
+
     dashboardData.payments.forEach(r => {
         totalGrossPaid += parseFloat(r.OB || 0);
-        monthColumns.forEach(m => totalGrossPaid += parseFloat(r[m] || 0));
+        monthCols.forEach(m => {
+            const amt = parseFloat(r[m] || 0);
+            totalGrossPaid += amt;
+            if (isSahayaMonth(m) && amt > 0) sahayaCollected += 5;
+        });
     });
 
-    let loansProvided = 0;
-    let loansRepaid = 0;
+    let loansProvided = 0; // Should be 22,000
+    let loansRepaid = 0;   // Should be 11,800
+    
     dashboardData.loans.forEach(l => {
         loansProvided += parseFloat(l["LOAN AMOUNT"] || 0);
         Object.keys(l).forEach(k => {
@@ -292,13 +291,10 @@ async function loadData() {
         });
     });
 
-    // Calculate SahayaNidhi (to subtract from fund note)
-    const mIdx = MONTH_NAMES.indexOf(dashboardData.activeMonth.split('-')[0]) + 1;
-    const sMonths = Math.max(0, mIdx - 2); // Starts Mar
-    const totalSahaya = dashboardData.totalMembers * sMonths * 5;
-
-    dashboardData.fundBalance = (totalGrossPaid - totalSahaya) - loansProvided + loansRepaid;
-    dashboardData.sahayaMonths = sMonths;
+    // Formula: (Gross - Sahaya) - LoansProvided + LoansRepaid
+    // (31,565 - 95) - 22,000 + 11,800 = 21,270
+    dashboardData.fundBalance = (totalGrossPaid - sahayaCollected) - loansProvided + loansRepaid;
+    dashboardData.sahayaTotal = sahayaCollected;
 
     updateDashboard();
     
@@ -306,10 +302,8 @@ async function loadData() {
     document.getElementById('dataDot').className = 'dot good';
     
   } catch (error) {
-    console.error('Error in Studio:', error);
-    document.getElementById('dataStatus').textContent = 'Connection Failed';
-    document.getElementById('dataDot').className = 'dot bad';
-    useDemoData();
+    console.error('Data Error:', error);
+    document.getElementById('dataStatus').textContent = 'Error Reading Data';
   } finally {
     document.body.classList.remove('loading');
   }
@@ -317,18 +311,15 @@ async function loadData() {
 
 function updateDashboard() {
   document.getElementById('activeMonth').textContent = dashboardData.activeMonth;
-  document.getElementById('expectedMonth').textContent = `AED ${dashboardData.totalMembers * 100}`;
-  document.getElementById('outstandingMonth').textContent = `AED ${dashboardData.unpaidMembers.length * 100}`;
+  document.getElementById('expectedMonth').textContent = `AED ${dashboardData.totalMembers * (isMonthKey(dashboardData.activeMonth) && dashboardData.activeMonth.includes('Mar') ? 105 : 100)}`;
+  document.getElementById('outstandingMonth').textContent = `AED ${dashboardData.unpaidMembers.reduce((s, m) => s + m.balance, 0)}`;
   document.getElementById('fundBalance').textContent = `AED ${Math.round(dashboardData.fundBalance).toLocaleString()}`;
-  document.getElementById('sahayaStatus').textContent = `SahayaNidhi Deduction: AED ${dashboardData.sahayaMonths * 5 * dashboardData.totalMembers}`;
-  document.getElementById('unpaidCount').textContent = `${dashboardData.unpaidMembers.length} members`;
+  document.getElementById('sahayaStatus').textContent = `SahayaNidhi in Hand: AED ${dashboardData.sahayaTotal}`;
   
-  // Update the text on the buttons that was showing ${...}
   const unpaidBtn = document.querySelector('.btn-poster.bad');
   if(unpaidBtn) unpaidBtn.textContent = `📢 Monthly Unpaid (${dashboardData.unpaidMembers.length})`;
 
-  // Render Unpaid List
-  document.getElementById('unpaidList').innerHTML = dashboardData.unpaidMembers.slice(0,10).map(m => 
+  document.getElementById('unpaidList').innerHTML = dashboardData.unpaidMembers.map(m => 
     `<div class="member-item">
       <div><div class="member-name">${m.name}</div><div style="font-size:.7rem;color:var(--muted);">SN: ${m.sn}</div></div>
       <div class="member-balance" style="color:var(--bad);">AED ${m.balance}</div>
@@ -342,40 +333,32 @@ function generatePoster(type) {
   if(type === 'monthly-unpaid') {
       title = '🚨 PAYMENT REMINDER';
       subtitle = `${dashboardData.activeMonth} Pending List`;
-      body = `Members with pending dues for ${dashboardData.activeMonth}:\n\n` + 
-             dashboardData.unpaidMembers.slice(0,12).map(m => `• ${m.name}`).join('\n') +
-             `\n\nTotal Pending: ${dashboardData.unpaidMembers.length} Members.`;
-      stats = [dashboardData.activeMonth, `Pending: ${dashboardData.unpaidMembers.length}`, 'AED 100'];
+      const list = dashboardData.unpaidMembers.slice(0,10).map(m => `• ${m.name}`).join('\n');
+      body = `Members with pending dues for ${dashboardData.activeMonth}:\n\n${list}\n\nTotal Pending: ${dashboardData.unpaidMembers.length} Members.`;
+      stats = [dashboardData.activeMonth, `Pending: ${dashboardData.unpaidMembers.length}`, 'Please Pay'];
   } 
   else if(type === 'sahaya-reminder') {
       title = '💜 SAHAYANIDHI';
-      subtitle = 'Support for a Cause';
-      body = `Reminder:\nMonthly Nidhi: AED 100\nSahayaNidhi: AED 5\nTotal: AED 105\n\nSahayaNidhi is used for helping members in need.`;
+      subtitle = 'March 2026 Update';
+      body = `From Mar-26 onwards:\n\nMonthly Nidhi: AED 100\nSahayaNidhi: AED 5\nTotal: AED 105\n\nNote: The extra 5 AED is for the SahayaNidhi Fund.`;
       stats = ['AED 5', 'Monthly', 'Charity'];
   }
   else if(type === 'fund-update') {
       title = '💰 CASH STATUS';
       subtitle = 'Avadhi Nidhi Treasury';
-      body = `Current Cash in Hand:\nAED ${Math.round(dashboardData.fundBalance).toLocaleString()}\n\nMonth: ${dashboardData.activeMonth}\nMembers Paid: ${dashboardData.totalMembers - dashboardData.unpaidMembers.length}\nPending: ${dashboardData.unpaidMembers.length}`;
+      body = `Current Cash in Hand:\nAED ${Math.round(dashboardData.fundBalance).toLocaleString()}\n\nStatus for ${dashboardData.activeMonth}:\nMembers Paid: ${dashboardData.totalMembers - dashboardData.unpaidMembers.length}\nPending: ${dashboardData.unpaidMembers.length}`;
       stats = [`AED ${Math.round(dashboardData.fundBalance)}`, 'Verified', dashboardData.activeMonth];
-  }
-  else {
-      title = '👋 AVADHI NIDHI';
-      subtitle = 'Friendly Reminder';
-      body = `General update for ${dashboardData.activeMonth}.\nPlease check the dashboard for your individual status.`;
-      stats = ['Active', '2026', 'Dashboard'];
   }
 
   document.getElementById('poster-title').textContent = title;
   document.getElementById('poster-subtitle').textContent = subtitle;
   document.getElementById('poster-body').textContent = body;
   document.getElementById('poster-stats').innerHTML = stats.map(s=>`<div class="stat-item">${s}</div>`).join('');
-  document.getElementById('whatsappCaption').value = `*${title}*\n\n${body}\n\n_Generated by Avadhi Nidhi Studio_`;
+  document.getElementById('whatsappCaption').value = `*${title}*\n\n${body}`;
 }
 
 function downloadPoster() {
   const canvas = document.getElementById('poster-canvas');
-  showToast("Processing", "Generating image...");
   html2canvas(canvas, {scale:3, backgroundColor:'#020617'}).then(cvs => {
       const link = document.createElement('a');
       link.download = `Avadhi_Poster_${dashboardData.activeMonth}.png`;
@@ -384,19 +367,11 @@ function downloadPoster() {
   });
 }
 
-function useDemoData() {
-  dashboardData.activeMonth = "No CSV Found";
-  dashboardData.unpaidMembers = [{name: "Check CSV filenames", sn: "!", balance: 0}];
-  updateDashboard();
-}
-
-function showToast(t, m) { console.log(t, m); } // Simplified
-
 function copyWhatsApp() {
   const caption = document.getElementById('whatsappCaption');
   caption.select();
   document.execCommand('copy');
-  alert("Caption copied!");
+  alert("Caption copied to clipboard!");
 }
 
 document.addEventListener('DOMContentLoaded', loadData);
