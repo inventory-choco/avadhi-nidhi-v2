@@ -1323,7 +1323,7 @@ function computeAll(){
         if (netPCurrent < 100) mOutMonthSum += (100 - netPCurrent);
 
         // Gross Paid Till Date (Includes OB + all months)
-        mGrossPaidTill += (safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, activeMonthKey));
+        mGrossPaidTill += (safeNum(r.OB) + sumMonths(r, paymentsCalcMonthKeys, null));
       });
 
       const mPaidMonth = mGrossPaidMonth - (members * 5);
@@ -1471,11 +1471,11 @@ function computeAll(){
       let val = r[h];
 
       if (h === "Total Paid") {
-        const found = paymentsComputedRows.find(x => x.Name === r.Name);
-        const calc = found ? found.__calcTotalPaid : safeNum(r["Total Paid"]);
-        const SahayaNidhiDeduction = activePaymentsYear === 2026 ? (getSahayaNidhiMonthsCount() * SahayaNidhi_AMOUNT) : 0;
-val = (calc - SahayaNidhiDeduction).toFixed(2);
-        totals[h] += calc;
+        // Calculate raw total from CSV row
+        const rowTotal = safeNum(r.OB) + sumMonths(r, paymentsDisplayMonthKeys, null);
+        val = rowTotal.toFixed(2);
+        totals[h] += rowTotal;
+
       } else if (h === "OB") {
         const ob = safeNum(r.OB);
         val = ob.toFixed(2);
