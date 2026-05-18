@@ -8,11 +8,11 @@ SN,Name,LOAN ISSUE DATE,LOAN AMOUNT,AGREED TO REPAY IN (MONTHS),Oct-25,Nov-25,De
 7,Shahid (Muthu),,,,,,,,,,,
 8,Mubarak,07-09-25,2000,5,200,200,200,,200,,190,190
 9,Ashfad Abdulla,02-08-25,2000,4,,1000,,,,,,
-10,Irshad,,,,,,,,,,,
+10,Irshad,,2500,5,,,,,,,,
 11,Sidheeq Kv C/O Kasim,09-08-25,2000,5,500,500,300,,700,,,
 12,Ahil Adam C/O Mubarack,,,,,,,,,,,
 13,Asif C/O Ashraf,15-04-25,2000,5,,100,,300,200,,1400,
-14,Shihab C/O Kasim,13-07-25,2000,5,,,,,500,500,500,
+14,Shihab C/O Kasim,13-07-25,2000,5,,,,,500,500,500,500
 15,Shahana Usman C/O Usman,25-09-25,2000,5,,,,200,400,400,1000,
 16,Jamal Kk C/O Usman,25-12-25,2000,5,,,,,400,,400,400
 17,Manaf Restaurant C/O Usman,,,,,,,,,,,
