@@ -327,12 +327,11 @@ Updated: 17032025 2116
     }
     .snap-btn:hover{ background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.16); }
 
-        @media print {
-      @media print {
-      #adminOpen, #btnReload, #btnToggleLoans, .sortbar, .snap-btn {
-        display: none !important;
-      }
-    }
+        @@media print {
+  #adminOpen, #btnReload, #btnToggleLoans, .sortbar, .snap-btn {
+    display: none !important;
+  }
+}
 
     /* Payments year toggle */
     .toggle-container {
@@ -438,7 +437,7 @@ Updated: 17032025 2116
           <div class="value">AED <span id="mExpMonth">—</span></div>
         </div>
         <div class="glass2 kpi" style="grid-column: span 4;">
-          <div class="label">Paid This Month</div>
+          <div class="label">Paid This Month - SahayaNidhi</div>
           <div class="value">AED <span id="mPaidMonth">—</span></div>
         </div>
         <div class="glass2 kpi" style="grid-column: span 4;">
@@ -514,7 +513,7 @@ Updated: 17032025 2116
           <div class="hint" id="fundNote" style="color: var(--warn); font-style: italic; font-weight: 600;">
             The SahayaNidhi amount AED <span id="noteSahayaNidhiAmt">0</span> is not included, This will be distributed to SahayaNidhi monthly.
           </div>
-          <div class="help mt-2" style="font-size: 11px; opacity: 0.6;">Formula: Total Paid (Gross) − Total Loan Provided + Loan Outstanding</div>
+          <div class="help mt-2" style="font-size: 11px; opacity: 0.6;">Formula: Net Member Payments − Total Loan Provided + Total Loan Repaid</div>
         </div> 
       </div>
     </div> <!-- End KPI Grid -->
@@ -944,15 +943,34 @@ function completedMonthsBetween(fromDate, toDate){
 
 
     function parseDateDDMMYY(dateStr){
-      // "27-05-25" or "27-05-2025"
-      const s = (dateStr||"").trim();
-      if (!s) return null;
-      const parts = s.split("-").map(x => Number(x));
-      if (parts.length !== 3 || parts.some(x => !isFinite(x))) return null;
-      const [day, month, year] = parts;
-      const fullYear = year < 100 ? 2000 + year : year;
-      return new Date(fullYear, month - 1, day);
+  const s = (dateStr || "").toString().trim();
+  if (!s) return null;
+
+  // Supports Excel serial date, example: 45907
+  if (/^\d+(\.\d+)?$/.test(s)) {
+    const serial = Number(s);
+    if (serial > 30000 && serial < 60000) {
+      const utcDays = Math.floor(serial - 25569);
+      const utcValue = utcDays * 86400 * 1000;
+      const d = new Date(utcValue);
+      return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
     }
+  }
+
+  // Supports DD-MM-YY or DD-MM-YYYY
+  const parts = s.split("-").map(x => Number(x));
+  if (parts.length === 3 && parts.every(x => isFinite(x))) {
+    const [day, month, year] = parts;
+    const fullYear = year < 100 ? 2000 + year : year;
+    return new Date(fullYear, month - 1, day);
+  }
+
+  // Supports normal browser-readable dates if needed
+  const d = new Date(s);
+  if (!isNaN(d)) return d;
+
+  return null;
+}
 	  
 function getSahayaNidhiMonthsCount() {
   if (!activeMonthKey) return 0;
