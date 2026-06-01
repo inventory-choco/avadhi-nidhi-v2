@@ -2,409 +2,823 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Avadhi Nidhi Loan Request</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Avadhi Nidhi — Loan Request Form</title>
+
   <!-- jsPDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     :root {
-      --primary: #0066cc;
-      --light: #f4f8fc;
-      --border: #d6e2f1;
-      --bg: #ffffff;
-      --text: #000000;
-      --radius: 10px;
-      --error: #ffcccc;
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.08);
+      --border: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.94);
+      --muted: rgba(255,255,255,.68);
+      --card: #f8fbff;
+      --field: #ffffff;
+      --field-border: #d7e3f3;
+      --primary: #2563eb;
+      --primary2: #1db954;
+      --warn: #f5c542;
+      --bad: #dc2626;
+      --good: #16a34a;
+      --radius: 14px;
+      --shadow: 0 18px 70px rgba(0,0,0,.45);
     }
 
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background-color: #0b1220; /* Matching your Dashboard theme */
-      color: var(--text);
       margin: 0;
-      padding: 15px;
+      padding: 16px;
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% 0%, rgba(37,99,235,.28), transparent 60%),
+        radial-gradient(900px 500px at 90% 10%, rgba(245,197,66,.18), transparent 55%),
+        radial-gradient(800px 500px at 70% 90%, rgba(29,185,84,.12), transparent 55%),
+        var(--bg);
+      color: #111827;
     }
 
-    form {
-      max-width: 700px;
-      background: var(--light);
-      margin: auto;
-      padding: 25px;
-      border-radius: 15px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
     }
 
-    h2 {
-      text-align: center;
-      color: var(--primary);
-      margin-top: 0;
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      backdrop-filter: blur(10px);
     }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.08);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      line-height: 1.1;
+      font-weight: 800;
+    }
+
+    .brand .sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .88rem;
+    }
+
+    .back-link {
+      color: var(--text);
+      text-decoration: none;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.07);
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-weight: 700;
+      font-size: .9rem;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.30);
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: white;
+      padding: 24px;
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 1.55rem;
+      font-weight: 850;
+    }
+
+    .card-header p {
+      margin: 8px 0 0;
+      color: rgba(255,255,255,.78);
+      line-height: 1.5;
+      font-size: .94rem;
+    }
+
+    form { padding: 22px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .full { grid-column: 1 / -1; }
 
     label {
       display: block;
-      margin-top: 15px;
-      font-weight: 600;
-      color: #333;
+      font-weight: 750;
+      color: #1f2937;
+      margin-bottom: 6px;
+      font-size: .93rem;
     }
 
-    /* Fix: Ensuring Date Picker is visible and clickable on PC */
-    input, select {
+    .required::after { content: " *"; color: var(--bad); }
+
+    input, select, textarea {
       width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--field-border);
+      background: var(--field);
       border-radius: var(--radius);
-      font-size: 16px; /* Prevents iOS auto-zoom */
-      background-color: #fff;
-      color: #000;
-      box-sizing: border-box;
+      padding: 12px 13px;
+      font-size: 16px;
+      color: #111827;
+      outline: none;
+      transition: box-shadow .15s, border-color .15s, background .15s;
     }
 
-    input[type="date"] {
-      min-height: 45px;
-      cursor: pointer;
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(37,99,235,.65);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
     }
 
-    .input-row {
-      display: flex;
-      gap: 10px;
+    input[readonly] {
+      background: #eef4ff;
+      color: #334155;
+      cursor: default;
     }
 
-    .readonly {
-      background: #e9f1fc;
-      pointer-events: none;
+    input[type="date"] { min-height: 47px; cursor: pointer; }
+
+    .input-row { display: flex; gap: 10px; }
+    .prefix { max-width: 76px; text-align: center; font-weight: 800; color: #334155; }
+
+    .help {
+      font-size: .78rem;
+      color: #64748b;
+      margin-top: 5px;
+      line-height: 1.35;
+    }
+
+    .error {
+      display: none;
+      margin-top: 6px;
+      color: var(--bad);
+      font-size: .78rem;
+      font-weight: 700;
+    }
+
+    .field.invalid input, .field.invalid select, .field.invalid textarea {
+      border-color: rgba(220,38,38,.75);
+      background: #fff7f7;
+    }
+    .field.invalid .error { display: block; }
+
+    .notice {
+      border-radius: 16px;
+      padding: 14px;
+      background: #fff9db;
+      border: 1px solid #f6d365;
+      color: #4b3b00;
+      line-height: 1.5;
+      font-size: .92rem;
     }
 
     .summary {
-      background: #fff9db;
-      border-left: 5px solid #f1c40f;
-      padding: 15px;
-      margin-top: 20px;
-      font-size: 0.95rem;
+      background: #ffffff;
+      border: 1px solid #dbeafe;
+      border-left: 5px solid var(--primary);
+      padding: 16px;
       border-radius: var(--radius);
       white-space: pre-line;
-      color: #333;
+      color: #1f2937;
+      line-height: 1.55;
+      min-height: 120px;
+    }
+
+    .signature-wrap {
+      background: white;
+      border: 1px solid #dbeafe;
+      border-radius: 16px;
+      padding: 12px;
     }
 
     #signatureCanvas {
-      border: 1px solid var(--border);
-      background-color: #fff;
-      border-radius: var(--radius);
-      margin-top: 10px;
-      touch-action: none; /* Crucial for mobile drawing */
       display: block;
       width: 100%;
-      max-width: 400px;
-      height: 180px;
+      height: 190px;
+      background: #fff;
+      border: 1px dashed #93a4bd;
+      border-radius: 12px;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .signature-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      color: #64748b;
+      font-size: .82rem;
     }
 
     .button-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
-      margin-top: 25px;
-      flex-wrap: wrap;
+      margin-top: 18px;
     }
 
     button {
-      flex: 1;
-      min-width: 140px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: var(--radius);
-      font-weight: bold;
+      border: 0;
+      border-radius: 13px;
+      padding: 13px 14px;
+      font-weight: 800;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: transform .1s, opacity .15s, box-shadow .15s;
+      min-height: 48px;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(0,0,0,.12); }
+    button:active { transform: translateY(0); box-shadow: none; }
+
+    .btn-primary { background: linear-gradient(135deg, var(--primary), #1d4ed8); color: white; }
+    .btn-whatsapp { background: #25D366; color: #063b1c; }
+    .btn-secondary { background: #475569; color: white; }
+    .btn-light { background: #e5e7eb; color: #111827; }
+    .btn-small { min-height: 0; padding: 9px 11px; font-size: .85rem; }
+
+    .status-line {
+      margin-top: 12px;
+      font-size: .86rem;
+      color: #475569;
+      text-align: center;
+      min-height: 20px;
+    }
+    .status-line.good { color: var(--good); font-weight: 800; }
+    .status-line.bad { color: var(--bad); font-weight: 800; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 760px) {
+      body { padding: 10px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .back-link { width: 100%; text-align: center; }
+      .grid { grid-template-columns: 1fr; gap: 13px; }
+      form { padding: 16px; }
+      .card-header { padding: 20px 16px; }
+      .button-row { grid-template-columns: 1fr; }
+      #signatureCanvas { height: 170px; }
     }
 
-    button:active { opacity: 0.8; }
-    button.secondary { background: #555; }
-    button.whatsapp { background: #25D366; color: white; }
-
-    .error-message { color: red; font-size: 12px; margin-top: 5px; }
-    .hidden { display: none; }
-
-    @media (max-width: 480px) {
-      form { padding: 15px; }
-      .button-row button { flex: 1 1 100%; }
+    @media print {
+      body { background: white; padding: 0; }
+      .topbar, .button-row, .signature-actions, .status-line { display: none !important; }
+      .card { box-shadow: none; border: 0; border-radius: 0; }
+      .card-header { background: white; color: black; border-bottom: 2px solid #111; }
+      form { padding: 14px; }
+      input, select, textarea { border-color: #999; }
     }
   </style>
 </head>
 <body>
-
-  <form id="loanForm">
-    <h2>Avadhi Nidhi Loan Request</h2>
-
-    <label>Request Date</label>
-    <input type="text" id="requestDate" class="readonly" readonly>
-
-    <label>Applicant Name</label>
-    <input type="text" id="name" required placeholder="Enter full name">
-
-    <label>Contact Number UAE</label>
-    <div class="input-row">
-      <input type="text" value="+971" readonly style="max-width: 70px;">
-      <input type="tel" id="contactUAE" placeholder="5x xxx xxxx" maxlength="9" required>
+  <main class="page">
+    <div class="topbar">
+      <div class="brand">
+        <img src="Images/an-Logo.png" alt="Avadhi Nidhi Logo" onerror="this.style.display='none'" />
+        <div>
+          <h1>Avadhi Nidhi</h1>
+          <div class="sub">Loan request form with PDF and WhatsApp sharing</div>
+        </div>
+      </div>
+      <a class="back-link" href="index.html">← Back to Dashboard</a>
     </div>
 
-    <label>Contact Number India (optional)</label>
-    <div class="input-row">
-      <input type="text" value="+91" readonly style="max-width: 70px;">
-      <input type="tel" id="contactIndia" maxlength="10">
-    </div>
+    <section class="card">
+      <div class="card-header">
+        <h2>Loan Request Form</h2>
+        <p>Fill the details carefully. The PDF and WhatsApp message will be generated from the same information.</p>
+      </div>
 
-    <label>Requesting Loan Amount (AED, Max 2000)</label>
-    <input type="number" id="amount" step="100" required>
-    <div id="amountError" class="error-message hidden">Maximum allowed amount is 2000</div>
+      <form id="loanForm" novalidate>
+        <div class="grid">
+          <div class="field">
+            <label for="requestDate">Request Date</label>
+            <input type="text" id="requestDate" readonly />
+          </div>
 
-    <label>Loan Required By Date</label>
-    <input type="date" id="loanDate" required>
+          <div class="field">
+            <label for="name" class="required">Applicant Name</label>
+            <input type="text" id="name" required placeholder="Enter full name" autocomplete="name" />
+            <div class="error">Please enter applicant name.</div>
+          </div>
 
-    <label>Reason for Loan Request</label>
-    <select id="reason" required>
-      <option value="">-- Select --</option>
-      <option value="Annual Leave">Annual Leave</option>
-      <option value="Emergency Leave">Emergency Leave</option>
-      <option value="Other">Other</option>
-    </select>
+          <div class="field">
+            <label for="contactUAE" class="required">Contact Number UAE</label>
+            <div class="input-row">
+              <input class="prefix" type="text" value="+971" readonly aria-label="UAE country code" />
+              <input type="tel" id="contactUAE" inputmode="numeric" maxlength="9" placeholder="5xxxxxxxx" autocomplete="tel" />
+            </div>
+            <div class="help">Enter 9 digits only, starting with 5. Example: 501234567</div>
+            <div class="error">Enter a valid UAE mobile number: 9 digits starting with 5.</div>
+          </div>
 
-    <div id="otherReasonDiv" class="hidden">
-      <label>Please specify reason</label>
-      <input type="text" id="otherReason">
-    </div>
+          <div class="field">
+            <label for="contactIndia">Contact Number India <span style="font-weight:500;color:#64748b;">(optional)</span></label>
+            <div class="input-row">
+              <input class="prefix" type="text" value="+91" readonly aria-label="India country code" />
+              <input type="tel" id="contactIndia" inputmode="numeric" maxlength="10" placeholder="10 digit number" />
+            </div>
+            <div class="error">Enter a valid 10-digit India number or keep it blank.</div>
+          </div>
 
-    <label>Repayment Months (Max 5)</label>
-    <input type="number" id="months" max="5" min="1" required>
+          <div class="field">
+            <label for="amount" class="required">Requesting Loan Amount</label>
+            <input type="number" id="amount" min="100" max="2000" step="100" placeholder="Maximum AED 2000" />
+            <div class="help">Amount should be between AED 100 and AED 2000. Use multiples of 100.</div>
+            <div class="error">Enter an amount between AED 100 and AED 2000, preferably in multiples of 100.</div>
+          </div>
 
-    <label>Loan Repayment Starting Date</label>
-    <input type="date" id="repayStart" required>
+          <div class="field">
+            <label for="loanDate" class="required">Loan Required By Date</label>
+            <input type="date" id="loanDate" />
+            <div class="error">Please select the required loan date.</div>
+          </div>
 
-    <label>Loan Repayment End Date</label>
-    <input type="date" id="repayEnd" required>
+          <div class="field">
+            <label for="reason" class="required">Reason for Loan Request</label>
+            <select id="reason">
+              <option value="">-- Select --</option>
+              <option value="Annual Leave">Annual Leave</option>
+              <option value="Emergency Leave">Emergency Leave</option>
+              <option value="Medical Emergency">Medical Emergency</option>
+              <option value="Family Emergency">Family Emergency</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="error">Please select a reason.</div>
+          </div>
 
-    <div class="summary" id="summaryMessage"></div>
+          <div class="field hidden" id="otherReasonField">
+            <label for="otherReason" class="required">Please Specify Reason</label>
+            <input type="text" id="otherReason" placeholder="Enter reason" />
+            <div class="error">Please specify the reason.</div>
+          </div>
 
-    <label>Draw Signature</label>
-    <canvas id="signatureCanvas"></canvas>
-    <button type="button" class="secondary" style="margin-top:10px; width:auto; flex:none;" onclick="clearSignature()">Clear Signature</button>
+          <div class="field">
+            <label for="months" class="required">Repayment Months</label>
+            <input type="number" id="months" min="1" max="5" step="1" placeholder="Maximum 5 months" />
+            <div class="help">Maximum allowed repayment period is 5 months.</div>
+            <div class="error">Enter repayment months between 1 and 5.</div>
+          </div>
 
-    <div class="button-row">
-      <button type="button" onclick="downloadPDF()">Download PDF</button>
-      <button type="button" class="whatsapp" onclick="shareOnWhatsApp()">WhatsApp Share</button>
-      <button type="button" class="secondary" onclick="window.print()">Print</button>
-      <button type="reset" class="secondary" onclick="resetForm()">Clear Form</button>
-    </div>
-  </form>
+          <div class="field">
+            <label for="monthlyEmi">Estimated Monthly Repayment</label>
+            <input type="text" id="monthlyEmi" readonly placeholder="Auto calculated" />
+          </div>
+
+          <div class="field">
+            <label for="repayStart" class="required">Loan Repayment Starting Date</label>
+            <input type="date" id="repayStart" />
+            <div class="help">Auto-filled as 2 months after the loan required date. You can adjust if needed.</div>
+            <div class="error">Please select repayment start date.</div>
+          </div>
+
+          <div class="field">
+            <label for="repayEnd" class="required">Loan Repayment End Date</label>
+            <input type="date" id="repayEnd" />
+            <div class="help">Auto-filled based on repayment months.</div>
+            <div class="error">Please select repayment end date. End date should be after start date.</div>
+          </div>
+
+          <div class="full notice">
+            <strong>Note:</strong> The form is for submitting a loan request only. Final approval and payment schedule will be confirmed by the Avadhi Nidhi committee.
+          </div>
+
+          <div class="full">
+            <label>Auto Summary</label>
+            <div class="summary" id="summaryMessage">Fill the required details to generate the request summary.</div>
+          </div>
+
+          <div class="full">
+            <label class="required">Applicant Signature</label>
+            <div class="signature-wrap">
+              <canvas id="signatureCanvas"></canvas>
+              <div class="signature-actions">
+                <span>Draw signature using mouse or finger.</span>
+                <button type="button" class="btn-light btn-small" onclick="clearSignature()">Clear Signature</button>
+              </div>
+            </div>
+            <div class="error" id="signatureError">Please provide signature.</div>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button type="button" class="btn-primary" onclick="downloadPDF()">Download PDF</button>
+          <button type="button" class="btn-whatsapp" onclick="shareOnWhatsApp()">WhatsApp Share</button>
+          <button type="button" class="btn-secondary" onclick="window.print()">Print</button>
+          <button type="button" class="btn-light" onclick="resetForm()">Clear Form</button>
+        </div>
+        <div class="status-line" id="statusLine"></div>
+      </form>
+    </section>
+  </main>
 
   <script>
     const { jsPDF } = window.jspdf;
-    let canvas, ctx, drawing = false;
+    const AED_MAX = 2000;
+    const AED_MIN = 100;
+    const MAX_MONTHS = 5;
+    const GRACE_MONTHS = 2;
 
-    // --- Signature Setup ---
-    function initCanvas() {
-      canvas = document.getElementById("signatureCanvas");
-      ctx = canvas.getContext("2d");
-      
-      // Fixed: Only set internal resolution once to prevent clearing on scroll
-      if (canvas.width === 300) return; 
+    let canvas;
+    let ctx;
+    let drawing = false;
+    let hasSignature = false;
 
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-      
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#000";
+    const $ = (id) => document.getElementById(id);
+
+    function todayISO() {
+      const d = new Date();
+      const off = d.getTimezoneOffset();
+      const local = new Date(d.getTime() - off * 60000);
+      return local.toISOString().slice(0, 10);
     }
 
-    function getPos(e) {
+    function formatDateHuman(iso) {
+      if (!iso) return "";
+      const d = new Date(iso + "T00:00:00");
+      if (isNaN(d)) return iso;
+      return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    function addMonthsISO(iso, months) {
+      if (!iso) return "";
+      const d = new Date(iso + "T00:00:00");
+      if (isNaN(d)) return "";
+      const day = d.getDate();
+      d.setMonth(d.getMonth() + Number(months || 0));
+      if (d.getDate() !== day) d.setDate(0);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function money(n) {
+      const x = Number(n);
+      if (!isFinite(x)) return "0.00";
+      return x.toFixed(2);
+    }
+
+    function onlyDigits(value) {
+      return String(value || "").replace(/\D/g, "");
+    }
+
+    function getReasonText() {
+      const reason = $("reason").value;
+      return reason === "Other" ? $("otherReason").value.trim() : reason;
+    }
+
+    function getFormData() {
+      const amount = Number($("amount").value || 0);
+      const months = Number($("months").value || 0);
+      const emi = amount > 0 && months > 0 ? amount / months : 0;
+      return {
+        requestDate: $("requestDate").value,
+        name: $("name").value.trim(),
+        contactUAE: onlyDigits($("contactUAE").value),
+        contactIndia: onlyDigits($("contactIndia").value),
+        amount,
+        loanDate: $("loanDate").value,
+        reason: getReasonText(),
+        months,
+        repayStart: $("repayStart").value,
+        repayEnd: $("repayEnd").value,
+        emi
+      };
+    }
+
+    function setStatus(message, kind = "") {
+      const el = $("statusLine");
+      el.textContent = message || "";
+      el.className = "status-line" + (kind ? " " + kind : "");
+    }
+
+    function initCanvas() {
+      canvas = $("signatureCanvas");
+      ctx = canvas.getContext("2d");
+      resizeCanvas(false);
+
+      canvas.addEventListener("mousedown", startDraw);
+      canvas.addEventListener("mousemove", draw);
+      window.addEventListener("mouseup", stopDraw);
+
+      canvas.addEventListener("touchstart", startDraw, { passive: false });
+      canvas.addEventListener("touchmove", draw, { passive: false });
+      window.addEventListener("touchend", stopDraw);
+      window.addEventListener("resize", () => resizeCanvas(true));
+    }
+
+    function resizeCanvas(preserve) {
+      if (!canvas || !ctx) return;
+      const existing = preserve && hasSignature ? canvas.toDataURL("image/png") : null;
+      const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return { x: clientX - rect.left, y: clientY - rect.top };
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#111827";
+
+      if (existing) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        img.src = existing;
+      }
+    }
+
+    function pointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const p = e.touches ? e.touches[0] : e;
+      return { x: p.clientX - rect.left, y: p.clientY - rect.top };
     }
 
     function startDraw(e) {
       e.preventDefault();
       drawing = true;
-      const pos = getPos(e);
+      hasSignature = true;
+      const pos = pointerPos(e);
       ctx.beginPath();
       ctx.moveTo(pos.x, pos.y);
+      $("signatureError").style.display = "none";
     }
 
-    function doDraw(e) {
+    function draw(e) {
       if (!drawing) return;
       e.preventDefault();
-      const pos = getPos(e);
+      const pos = pointerPos(e);
       ctx.lineTo(pos.x, pos.y);
       ctx.stroke();
     }
 
-    function stopDraw() { drawing = false; }
+    function stopDraw() {
+      drawing = false;
+    }
 
     function clearSignature() {
+      if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hasSignature = false;
+      $("signatureError").style.display = "none";
     }
 
-    function isCanvasEmpty() {
-      const blank = document.createElement('canvas');
-      blank.width = canvas.width;
-      blank.height = canvas.height;
-      return canvas.toDataURL() === blank.toDataURL();
+    function markField(id, invalid) {
+      const field = $(id)?.closest(".field");
+      if (!field) return;
+      field.classList.toggle("invalid", !!invalid);
     }
 
-    // --- Form Logic ---
-    function autoSetDates() {
-      const loanDateInput = document.getElementById('loanDate');
-      const monthsInput = document.getElementById('months');
-      const repayStart = document.getElementById('repayStart');
-      const repayEnd = document.getElementById('repayEnd');
+    function validateForm(requireSignature = false) {
+      const d = getFormData();
+      let ok = true;
 
-      if (loanDateInput.value && monthsInput.value > 0) {
-        const start = new Date(loanDateInput.value);
-        start.setMonth(start.getMonth() + 2); // 2-month grace
-        repayStart.valueAsDate = start;
+      const nameBad = d.name.length < 2;
+      markField("name", nameBad); ok = ok && !nameBad;
 
-        const end = new Date(start);
-        end.setMonth(end.getMonth() + parseInt(monthsInput.value));
-        repayEnd.valueAsDate = end;
+      const uaeBad = !/^5\d{8}$/.test(d.contactUAE);
+      markField("contactUAE", uaeBad); ok = ok && !uaeBad;
+
+      const indiaBad = d.contactIndia.length > 0 && !/^\d{10}$/.test(d.contactIndia);
+      markField("contactIndia", indiaBad); ok = ok && !indiaBad;
+
+      const amountBad = !isFinite(d.amount) || d.amount < AED_MIN || d.amount > AED_MAX || d.amount % 100 !== 0;
+      markField("amount", amountBad); ok = ok && !amountBad;
+
+      const loanDateBad = !d.loanDate;
+      markField("loanDate", loanDateBad); ok = ok && !loanDateBad;
+
+      const reasonBad = !$("reason").value;
+      markField("reason", reasonBad); ok = ok && !reasonBad;
+
+      const otherVisible = $("reason").value === "Other";
+      $("otherReasonField").classList.toggle("hidden", !otherVisible);
+      const otherBad = otherVisible && d.reason.length < 3;
+      markField("otherReason", otherBad); ok = ok && !otherBad;
+
+      const monthsBad = !Number.isInteger(d.months) || d.months < 1 || d.months > MAX_MONTHS;
+      markField("months", monthsBad); ok = ok && !monthsBad;
+
+      const startBad = !d.repayStart;
+      markField("repayStart", startBad); ok = ok && !startBad;
+
+      const endBad = !d.repayEnd || (d.repayStart && d.repayEnd <= d.repayStart);
+      markField("repayEnd", endBad); ok = ok && !endBad;
+
+      if (requireSignature) {
+        const sigBad = !hasSignature;
+        $("signatureError").style.display = sigBad ? "block" : "none";
+        ok = ok && !sigBad;
       }
+
+      setStatus(ok ? "" : "Please correct the highlighted fields.", ok ? "" : "bad");
+      return ok;
+    }
+
+    function updateAutoDates() {
+      const loanDate = $("loanDate").value;
+      const months = Number($("months").value || 0);
+      if (loanDate && months > 0 && months <= MAX_MONTHS) {
+        const start = addMonthsISO(loanDate, GRACE_MONTHS);
+        const end = addMonthsISO(start, months);
+        $("repayStart").value = start;
+        $("repayEnd").value = end;
+      }
+      updateComputedFields();
+    }
+
+    function updateComputedFields() {
+      const d = getFormData();
+      $("monthlyEmi").value = d.amount > 0 && d.months > 0 ? `AED ${money(d.emi)}` : "";
       generateSummary();
+      validateForm(false);
     }
 
     function generateSummary() {
-      const name = document.getElementById('name').value;
-      const amount = document.getElementById('amount').value;
-      const lDate = document.getElementById('loanDate').value;
-      const reason = document.getElementById('reason').value === 'Other' ? document.getElementById('otherReason').value : document.getElementById('reason').value;
-      const endDate = document.getElementById('repayEnd').value;
+      const d = getFormData();
+      const summary = $("summaryMessage");
+      if (!d.name && !d.amount && !d.loanDate) {
+        summary.textContent = "Fill the required details to generate the request summary.";
+        return;
+      }
 
-      if (!name || !amount || !lDate || !endDate) return;
+      summary.textContent = `Dear Avadhi Nidhi Committee,
 
-      document.getElementById('summaryMessage').innerText = 
-`Dear Avadhi Nidhi Committee,
+I, ${d.name || "[Applicant Name]"}, would like to request a loan of AED ${d.amount ? money(d.amount) : "[Amount]"} on or before ${d.loanDate ? formatDateHuman(d.loanDate) : "[Loan Required Date]"}${d.reason ? " for " + d.reason : ""}.
 
-I would like to request for a loan of AED ${amount} on ${lDate} for ${reason || '...'}.
-I will repay the loan amount completely by ${endDate}.
+I agree to repay the loan in ${d.months || "[No. of]"} month(s), starting from ${d.repayStart ? formatDateHuman(d.repayStart) : "[Start Date]"} and completing by ${d.repayEnd ? formatDateHuman(d.repayEnd) : "[End Date]"}.
+
+Estimated monthly repayment: AED ${d.emi ? money(d.emi) : "0.00"}.
 
 Kindly approve my request.
 
 Requested By,
-${name}`;
+${d.name || "[Applicant Name]"}`;
     }
 
     function resetForm() {
-      setTimeout(() => {
-        clearSignature();
-        document.getElementById('summaryMessage').innerText = "";
-        document.getElementById('requestDate').value = new Date().toISOString().split("T")[0];
-      }, 10);
+      $("loanForm").reset();
+      $("requestDate").value = todayISO();
+      $("otherReasonField").classList.add("hidden");
+      clearSignature();
+      document.querySelectorAll(".field.invalid").forEach(el => el.classList.remove("invalid"));
+      $("signatureError").style.display = "none";
+      setStatus("Form cleared.", "good");
+      updateComputedFields();
     }
 
-    // --- PDF & Export ---
-    function downloadPDF() {
-      if (!document.getElementById('name').value || isCanvasEmpty()) {
-        alert("Please fill name and provide signature.");
-        return;
-      }
-
-      const doc = new jsPDF();
-      const name = document.getElementById('name').value;
-      const reqDate = document.getElementById('requestDate').value;
-      const contactUAE = "+971 " + document.getElementById('contactUAE').value;
-      const amount = document.getElementById('amount').value;
-      const reason = document.getElementById('reason').value === 'Other' ? document.getElementById('otherReason').value : document.getElementById('reason').value;
-      const months = document.getElementById('months').value;
-      const rStart = document.getElementById('repayStart').value;
-      const rEnd = document.getElementById('repayEnd').value;
-      const summary = document.getElementById('summaryMessage').innerText;
-
-      // Header
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 204);
-      doc.text("Avadhi Nidhi Loan Request", 105, 20, { align: "center" });
-
-      // Body
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      let y = 40;
-      const left = 20, right = 80;
-
-      const addRow = (label, value) => {
-        doc.setFont("helvetica", "bold");
-        doc.text(label, left, y);
-        doc.setFont("helvetica", "normal");
-        doc.text(String(value), right, y);
-        y += 10;
-      };
-
-      addRow("Request Date:", reqDate);
-      addRow("Applicant Name:", name);
-      addRow("Contact UAE:", contactUAE);
-      addRow("Loan Amount:", "AED " + amount);
-      addRow("Reason:", reason);
-      addRow("Repay Months:", months);
-      addRow("Start Date:", rStart);
-      addRow("End Date:", rEnd);
-      
-      y += 5;
-      doc.setFont("helvetica", "bold");
-      doc.text("Summary:", left, y);
-      y += 7;
-      doc.setFont("helvetica", "normal");
-      const splitText = doc.splitTextToSize(summary, 170);
-      doc.text(splitText, left, y);
-      
-      y += (splitText.length * 7) + 10;
-      doc.text("Signature:", left, y);
-      doc.addImage(canvas.toDataURL("image/png"), 'PNG', left, y + 5, 50, 20);
-
-      doc.save(`Avadhi_Loan_${name.replace(/\s+/g, '_')}.pdf`);
+    function buildWhatsappText() {
+      const d = getFormData();
+      return `*Avadhi Nidhi Loan Request*\n\n` +
+        `*Request Date:* ${formatDateHuman(d.requestDate)}\n` +
+        `*Applicant:* ${d.name}\n` +
+        `*UAE Contact:* +971 ${d.contactUAE}\n` +
+        (d.contactIndia ? `*India Contact:* +91 ${d.contactIndia}\n` : "") +
+        `*Loan Amount:* AED ${money(d.amount)}\n` +
+        `*Required By:* ${formatDateHuman(d.loanDate)}\n` +
+        `*Reason:* ${d.reason}\n` +
+        `*Repayment:* ${d.months} month(s)\n` +
+        `*Monthly Repayment:* AED ${money(d.emi)}\n` +
+        `*Repayment Start:* ${formatDateHuman(d.repayStart)}\n` +
+        `*Repayment End:* ${formatDateHuman(d.repayEnd)}\n\n` +
+        `Kindly approve my request.\n\n` +
+        `Requested By,\n${d.name}`;
     }
 
     function shareOnWhatsApp() {
-      const name = document.getElementById('name').value;
-      const amount = document.getElementById('amount').value;
-      if (!name || !amount) { alert("Fill the form first"); return; }
-      
-      const text = encodeURIComponent(`Avadhi Nidhi Loan Request\nName: ${name}\nAmount: AED ${amount}\nRepayment ends: ${document.getElementById('repayEnd').value}`);
-      window.open(`https://wa.me/?text=${text}`);
+      if (!validateForm(false)) return;
+      const text = encodeURIComponent(buildWhatsappText());
+      window.open(`https://wa.me/?text=${text}`, "_blank");
     }
 
-    // --- Init ---
-    window.onload = () => {
+    function addPdfRow(doc, label, value, xLabel, xValue, y) {
+      doc.setFont("helvetica", "bold");
+      doc.text(label, xLabel, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(value || "—"), xValue, y);
+      return y + 8;
+    }
+
+    function downloadPDF() {
+      if (!validateForm(true)) return;
+
+      const d = getFormData();
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 18;
+      let y = 18;
+
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, pageW, 32, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("Avadhi Nidhi Loan Request", pageW / 2, 15, { align: "center" });
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Generated from official loan request form", pageW / 2, 23, { align: "center" });
+
+      y = 44;
+      doc.setTextColor(0, 0, 0);
+      doc.setDrawColor(220, 230, 245);
+      doc.roundedRect(margin, y - 7, pageW - margin * 2, 86, 3, 3);
+
+      doc.setFontSize(12);
+      y = addPdfRow(doc, "Request Date:", formatDateHuman(d.requestDate), margin + 6, 72, y);
+      y = addPdfRow(doc, "Applicant Name:", d.name, margin + 6, 72, y);
+      y = addPdfRow(doc, "UAE Contact:", "+971 " + d.contactUAE, margin + 6, 72, y);
+      y = addPdfRow(doc, "India Contact:", d.contactIndia ? "+91 " + d.contactIndia : "—", margin + 6, 72, y);
+      y = addPdfRow(doc, "Loan Amount:", "AED " + money(d.amount), margin + 6, 72, y);
+      y = addPdfRow(doc, "Required By:", formatDateHuman(d.loanDate), margin + 6, 72, y);
+      y = addPdfRow(doc, "Reason:", d.reason, margin + 6, 72, y);
+      y = addPdfRow(doc, "Repayment Months:", d.months + " month(s)", margin + 6, 72, y);
+      y = addPdfRow(doc, "Monthly Repayment:", "AED " + money(d.emi), margin + 6, 72, y);
+      y = addPdfRow(doc, "Repayment Start:", formatDateHuman(d.repayStart), margin + 6, 72, y);
+      y = addPdfRow(doc, "Repayment End:", formatDateHuman(d.repayEnd), margin + 6, 72, y);
+
+      y += 8;
+      doc.setFont("helvetica", "bold");
+      doc.text("Request Summary", margin, y);
+      y += 8;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      const summaryLines = doc.splitTextToSize($("summaryMessage").textContent, pageW - margin * 2);
+      doc.text(summaryLines, margin, y);
+      y += summaryLines.length * 6 + 12;
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Applicant Signature", margin, y);
+      y += 6;
+      doc.setDrawColor(180, 190, 205);
+      doc.roundedRect(margin, y, 70, 32, 2, 2);
+      doc.addImage(canvas.toDataURL("image/png"), "PNG", margin + 4, y + 4, 62, 24);
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(90, 90, 90);
+      doc.text("Note: Final approval and payment schedule will be confirmed by the Avadhi Nidhi committee.", margin, 286);
+
+      const safeName = d.name.replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "");
+      doc.save(`Avadhi_Nidhi_Loan_Request_${safeName || "Applicant"}.pdf`);
+      setStatus("PDF downloaded successfully.", "good");
+    }
+
+    function attachListeners() {
+      ["name", "contactUAE", "contactIndia", "amount", "months", "otherReason", "repayStart", "repayEnd"].forEach(id => {
+        $(id).addEventListener("input", updateComputedFields);
+      });
+
+      $("contactUAE").addEventListener("input", (e) => { e.target.value = onlyDigits(e.target.value).slice(0, 9); });
+      $("contactIndia").addEventListener("input", (e) => { e.target.value = onlyDigits(e.target.value).slice(0, 10); });
+
+      $("loanDate").addEventListener("change", updateAutoDates);
+      $("reason").addEventListener("change", () => {
+        $("otherReasonField").classList.toggle("hidden", $("reason").value !== "Other");
+        updateComputedFields();
+      });
+      $("months").addEventListener("input", updateAutoDates);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      $("requestDate").value = todayISO();
       initCanvas();
-      document.getElementById('requestDate').value = new Date().toISOString().split("T")[0];
-
-      // Signature Listeners
-      canvas.addEventListener("mousedown", startDraw);
-      canvas.addEventListener("mousemove", doDraw);
-      window.addEventListener("mouseup", stopDraw);
-
-      canvas.addEventListener("touchstart", startDraw, { passive: false });
-      canvas.addEventListener("touchmove", doDraw, { passive: false });
-      window.addEventListener("touchend", stopDraw);
-
-      // Input Listeners
-      document.getElementById('amount').oninput = function() {
-        document.getElementById('amountError').classList.toggle('hidden', this.value <= 2000);
-        generateSummary();
-      };
-      document.getElementById('loanDate').onchange = autoSetDates;
-      document.getElementById('months').oninput = autoSetDates;
-      document.getElementById('name').oninput = generateSummary;
-      document.getElementById('reason').onchange = function() {
-        document.getElementById('otherReasonDiv').classList.toggle('hidden', this.value !== 'Other');
-        generateSummary();
-      };
-      document.getElementById('repayStart').onchange = generateSummary;
-      document.getElementById('repayEnd').onchange = generateSummary;
-    };
+      attachListeners();
+      updateComputedFields();
+    });
   </script>
 </body>
 </html>
