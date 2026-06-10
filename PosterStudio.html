@@ -153,6 +153,7 @@ select option{ background:#161f30; color:#fff; }
       <button class="btn-poster warn" id="btnTopDefaulters" onclick="generatePoster('top-defaulters')">⚠️ Top Outstanding</button>
       <button class="btn-poster loan" id="btnLoanStatus" onclick="generatePoster('loan-status')">🏦 Loan Status</button>
       <button class="btn-poster sahaya" onclick="generatePoster('sahaya-reminder')">💜 SahayaNidhi AED 5</button>
+      <button class="btn-poster warn" id="btnMemberStatus" onclick="generatePoster('member-month-status')">📋 Monthly Member Status</button>
       <button class="btn-poster good" onclick="generatePoster('fund-update')">💰 Fund Update</button>
       <button class="btn-poster" onclick="generatePoster('general-reminder')">👋 General Reminder</button>
     </div>
@@ -393,16 +394,96 @@ function changeReportMonth(){
 function calcMonthlySplit(rawAmount, activeKey){
   const raw = safeNum(rawAmount);
   if (!isSahayaMonth(activeKey)) {
-    return { raw, monthlyNet: raw, sahayaPaid: 0, monthlyOutstanding: Math.max(0, MONTHLY_CONTRIBUTION - raw) };
+    const monthlyNet = raw;
+    return {
+      raw,
+      monthlyNet,
+      savingsPaidForMonthlyDue: Math.min(MONTHLY_CONTRIBUTION, monthlyNet),
+      sahayaPaid: 0,
+      monthlyOutstanding: Math.max(0, MONTHLY_CONTRIBUTION - monthlyNet),
+      sahayaOutstanding: 0
+    };
   }
 
-  // Correct rule: SahayaNidhi is counted only when a member actually paid something that month.
-  // AED 105 means AED 100 monthly + AED 5 SahayaNidhi.
-  // AED 100 means monthly AED 95 + SahayaNidhi AED 5 under this combined-payment system.
-  const sahayaPaid = raw > 0 ? Math.min(SAHAYA_AMOUNT, raw) : 0;
+  // Avadhi Nidhi logic from user:
+  // Regular monthly savings due = AED 100.
+  // SahayaNidhi due = AED 5 from Mar-26 onwards.
+  // If a member pays AED 105, AED 100 goes to savings and AED 5 goes to SahayaNidhi.
+  // If a member pays only AED 100, savings is treated as paid, but SahayaNidhi is still pending AED 5.
+  // If a member pays more than AED 105, only AED 5 is taken as this month's SahayaNidhi; the extra remains savings/arrears collection.
+  const savingsPaidForMonthlyDue = Math.min(MONTHLY_CONTRIBUTION, raw);
+  const sahayaPaid = Math.min(SAHAYA_AMOUNT, Math.max(0, raw - MONTHLY_CONTRIBUTION));
   const monthlyNet = Math.max(0, raw - sahayaPaid);
-  const monthlyOutstanding = Math.max(0, MONTHLY_CONTRIBUTION - monthlyNet);
-  return { raw, monthlyNet, sahayaPaid, monthlyOutstanding };
+  const monthlyOutstanding = Math.max(0, MONTHLY_CONTRIBUTION - savingsPaidForMonthlyDue);
+  const sahayaOutstanding = Math.max(0, SAHAYA_AMOUNT - sahayaPaid);
+
+  return { raw, monthlyNet, savingsPaidForMonthlyDue, sahayaPaid, monthlyOutstanding, sahayaOutstanding };
+}
+
+function monthStart(k){
+  return monthKeyToDate(k);
+}
+
+function monthEnd(k){
+  const d = monthKeyToDate(k);
+  return d ? new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999) : null;
+}
+
+function sumMonthsBefore(row, monthKeys, activeKey){
+  const activeDate = monthKeyToDate(activeKey);
+  let sum = 0;
+  (monthKeys || []).forEach(k => {
+    const d = monthKeyToDate(k);
+    if (!d || !activeDate || d >= activeDate) return;
+    sum += safeNum(row[k]);
+  });
+  return sum;
+}
+
+function isLoanActiveByMonth(loanRow, activeKey){
+  const amount = safeNum(loanRow['LOAN AMOUNT']);
+  if (amount <= 0) return false;
+  const issueDate = parseDateDDMMYY(loanRow['LOAN ISSUE DATE']);
+  const end = monthEnd(activeKey);
+  if (!issueDate) return true; // do not hide loans with missing dates; show Date Missing in report
+  return !!(end && issueDate <= end);
+}
+
+function calcLoanMonthlyStatus(loanRow, activeKey){
+  const amount = safeNum(loanRow['LOAN AMOUNT']);
+  const months = safeNum(loanRow['AGREED TO REPAY IN (MONTHS)']);
+  const issueDate = parseDateDDMMYY(loanRow['LOAN ISSUE DATE']);
+  const repaidBefore = sumMonthsBefore(loanRow, dashboardData.loanMonthKeys, activeKey);
+  const paidThisMonth = safeNum(loanRow[activeKey]);
+  const repaidTill = repaidBefore + paidThisMonth;
+  const balance = Math.max(0, amount - repaidTill);
+
+  let dueThisMonth = 0;
+  let pendingThisMonth = 0;
+  let emi = 0;
+  let status = 'No Loan';
+
+  if (amount > 0) {
+    if (!issueDate) {
+      status = 'Date Missing';
+    } else if (!isLoanActiveByMonth(loanRow, activeKey)) {
+      status = 'Not Started';
+    } else if (months <= 0) {
+      status = 'EMI Months Missing';
+    } else if (balance <= 0) {
+      status = 'Cleared';
+    } else {
+      emi = amount / months;
+      const remainingBeforeThisMonth = Math.max(0, amount - repaidBefore);
+      dueThisMonth = Math.min(emi, remainingBeforeThisMonth);
+      pendingThisMonth = Math.max(0, dueThisMonth - paidThisMonth);
+      const deadline = new Date(issueDate.getFullYear(), issueDate.getMonth() + months, issueDate.getDate());
+      const activeEnd = monthEnd(activeKey) || new Date();
+      status = activeEnd > deadline ? 'Overdue' : 'On Time';
+    }
+  }
+
+  return { amount, months, emi, repaidBefore, paidThisMonth, repaidTill, balance, dueThisMonth, pendingThisMonth, status };
 }
 
 function computeDashboardData(){
@@ -419,25 +500,46 @@ function computeDashboardData(){
   let grossPaidTill = 0;
   let monthlyOutstanding = 0;
   let sahayaPaidMonth = 0;
+  let sahayaOutstandingMonth = 0;
   let sahayaPaidTill = 0;
   let unpaidMembers = [];
   let defaulters = [];
+  let memberMonthlyStatus = [];
 
   const expectedMonth = members * MONTHLY_CONTRIBUTION;
-  const expectedTillPerMember = safeNum(dashboardData.payments[0]?.OB) + (monthsTillActive * MONTHLY_CONTRIBUTION);
+  const openingExpected = Math.max(...dashboardData.payments.map(r => safeNum(r.OB)), 0);
+  const expectedTillPerMember = openingExpected + (monthsTillActive * MONTHLY_CONTRIBUTION);
 
   dashboardData.payments.forEach(r => {
     const split = calcMonthlySplit(r[active], active);
     paidMonth += split.monthlyNet;
     sahayaPaidMonth += split.sahayaPaid;
+    sahayaOutstandingMonth += split.sahayaOutstanding;
     monthlyOutstanding += split.monthlyOutstanding;
+
+    const loanRow = dashboardData.loans.find(l => String(l.SN).trim() === String(r.SN).trim()) || dashboardData.loans.find(l => String(l.Name).trim() === String(r.Name).trim());
+    const loanMonth = loanRow ? calcLoanMonthlyStatus(loanRow, active) : { pendingThisMonth: 0, dueThisMonth: 0, paidThisMonth: 0, balance: 0, status: 'No Loan' };
+
+    memberMonthlyStatus.push({
+      sn: r.SN,
+      name: r.Name,
+      monthlyPaid: split.savingsPaidForMonthlyDue,
+      monthlyPending: split.monthlyOutstanding,
+      sahayaPaid: split.sahayaPaid,
+      sahayaPending: split.sahayaOutstanding,
+      loanDueThisMonth: loanMonth.dueThisMonth,
+      loanPaidThisMonth: loanMonth.paidThisMonth,
+      loanPendingThisMonth: loanMonth.pendingThisMonth,
+      loanBalance: loanMonth.balance,
+      loanStatus: loanMonth.status
+    });
 
     if (split.monthlyOutstanding > 0) {
       unpaidMembers.push({
         sn: r.SN,
         name: r.Name,
         balance: split.monthlyOutstanding,
-        paidNet: split.monthlyNet,
+        paidNet: split.savingsPaidForMonthlyDue,
         rawPaid: split.raw
       });
     }
@@ -462,30 +564,40 @@ function computeDashboardData(){
 
   unpaidMembers.sort((a,b) => b.balance - a.balance || Number(a.sn) - Number(b.sn));
   defaulters.sort((a,b) => b.balance - a.balance || Number(a.sn) - Number(b.sn));
+  memberMonthlyStatus.sort((a,b) => Number(a.sn) - Number(b.sn));
 
   let loanProvided = 0;
   let loanRepaid = 0;
+  let loanPendingThisMonth = 0;
+  let loanDueThisMonth = 0;
   let loanBalances = [];
+
   dashboardData.loans.forEach(l => {
     const amount = safeNum(l['LOAN AMOUNT']);
-    const repaid = sumMonths(l, dashboardData.loanMonthKeys, active);
-    const balance = Math.max(0, amount - repaid);
-    if (amount > 0) {
-      loanProvided += amount;
-      loanRepaid += repaid;
-      let status = 'On Time';
-      if (balance <= 0) status = 'Cleared';
-      else {
-        const issueDate = parseDateDDMMYY(l['LOAN ISSUE DATE']);
-        if (issueDate) {
-          const deadline = new Date(issueDate.getFullYear(), issueDate.getMonth() + 8, issueDate.getDate());
-          if (new Date() > deadline) status = 'Overdue';
-        } else {
-          status = 'Date Missing';
-        }
-      }
-      loanBalances.push({ sn:l.SN, name:l.Name, amount, repaid, balance, status });
-    }
+    if (amount <= 0 || !isLoanActiveByMonth(l, active)) return;
+
+    const loanMonth = calcLoanMonthlyStatus(l, active);
+    const repaid = loanMonth.repaidTill;
+    const balance = loanMonth.balance;
+
+    loanProvided += amount;
+    loanRepaid += repaid;
+    loanDueThisMonth += loanMonth.dueThisMonth;
+    loanPendingThisMonth += loanMonth.pendingThisMonth;
+
+    loanBalances.push({
+      sn:l.SN,
+      name:l.Name,
+      amount,
+      months: loanMonth.months,
+      emi: loanMonth.emi,
+      repaid,
+      paidThisMonth: loanMonth.paidThisMonth,
+      dueThisMonth: loanMonth.dueThisMonth,
+      pendingThisMonth: loanMonth.pendingThisMonth,
+      balance,
+      status: loanMonth.status
+    });
   });
   loanBalances.sort((a,b) => b.balance - a.balance || Number(a.sn) - Number(b.sn));
 
@@ -498,9 +610,11 @@ function computeDashboardData(){
   dashboardData.unpaidMembers = unpaidMembers;
   dashboardData.defaulters = defaulters;
   dashboardData.loanBalances = loanBalances;
+  dashboardData.memberMonthlyStatus = memberMonthlyStatus;
   dashboardData.computed = {
     monthsTillActive,
     sahayaMonthsPassed,
+    openingExpected,
     expectedMonth,
     paidMonth,
     monthlyOutstanding,
@@ -516,6 +630,8 @@ function computeDashboardData(){
     loanProvided,
     loanRepaid,
     loanOutstanding: Math.max(0, loanProvided - loanRepaid),
+    loanDueThisMonth,
+    loanPendingThisMonth,
     fundBalance
   };
 }
@@ -528,12 +644,13 @@ function updateDashboard(){
   $('outstandingMonth').textContent = `AED ${toMoney(c.monthlyOutstanding,0)}`;
   $('fundBalance').textContent = `AED ${toMoney(c.fundBalance,2)}`;
   $('sahayaStatus').textContent = `SahayaNidhi: Expected AED ${toMoney(c.sahayaExpectedMonth,0)} | Paid AED ${toMoney(c.sahayaPaidMonth,0)} | Pending AED ${toMoney(c.sahayaOutstandingMonth,0)}`;
-  $('loanStatus').textContent = `Loan Provided: AED ${toMoney(c.loanProvided,0)} | Repaid: AED ${toMoney(c.loanRepaid,0)} | Outstanding: AED ${toMoney(c.loanOutstanding,0)}`;
+  $('loanStatus').textContent = `Loan Provided: AED ${toMoney(c.loanProvided,0)} | Repaid: AED ${toMoney(c.loanRepaid,0)} | Outstanding: AED ${toMoney(c.loanOutstanding,0)} | This Month Pending: AED ${toMoney(c.loanPendingThisMonth,0)}`;
   $('unpaidCount').textContent = `${dashboardData.unpaidMembers.length} members`;
   $('defaultersCount').textContent = `${dashboardData.defaulters.length} members`;
   $('btnMonthlyUnpaid').textContent = `📢 Monthly Unpaid (${dashboardData.unpaidMembers.length})`;
   $('btnTopDefaulters').textContent = `⚠️ Top Outstanding (${dashboardData.defaulters.length})`;
   $('btnLoanStatus').textContent = `🏦 Loan Status (${dashboardData.loanBalances.filter(x => x.balance > 0).length})`;
+  if ($('btnMemberStatus')) $('btnMemberStatus').textContent = `📋 Monthly Member Status (${dashboardData.memberMonthlyStatus.length})`;
 
   // Dashboard preview remains short, but the poster/caption report uses the FULL list.
   $('unpaidList').innerHTML = renderMiniList(dashboardData.unpaidMembers.slice(0,8), 'AED');
@@ -560,35 +677,104 @@ function generatePoster(type){
 
   if(type === 'monthly-unpaid'){
     title = 'PAYMENT REMINDER';
-    subtitle = `${dashboardData.activeMonth} Pending List`;
-    body = `Members with pending monthly payment for ${dashboardData.activeMonth}:\n\n${listText(dashboardData.unpaidMembers)}\n\nMonthly Expected: AED ${toMoney(c.expectedMonth,0)}\nPaid Monthly Payment: AED ${toMoney(c.paidMonth,0)}\nOutstanding This Month: AED ${toMoney(c.monthlyOutstanding,0)}\n\nSahayaNidhi Expected: AED ${toMoney(c.sahayaExpectedMonth,0)}\nSahayaNidhi Paid: AED ${toMoney(c.sahayaPaidMonth,0)}\nSahayaNidhi Pending: AED ${toMoney(c.sahayaOutstandingMonth,0)}`;
+    subtitle = `${dashboardData.activeMonth} Monthly Savings Pending List`;
+    body = `Members with pending AED 100 Avadhi Nidhi monthly savings for ${dashboardData.activeMonth}:
+
+${listText(dashboardData.unpaidMembers)}
+
+Monthly Savings Expected: AED ${toMoney(c.expectedMonth,0)}
+Monthly Savings Paid: AED ${toMoney(c.paidMonth,0)}
+Monthly Savings Pending: AED ${toMoney(c.monthlyOutstanding,0)}
+
+Note: SahayaNidhi AED 5 is reported separately.`;
     stats = [dashboardData.activeMonth, `Pending: ${dashboardData.unpaidMembers.length}`, `AED ${toMoney(c.monthlyOutstanding,0)}`];
   } else if(type === 'top-defaulters'){
-    title = 'OUTSTANDING SUMMARY';
+    title = 'SAVINGS OUTSTANDING SUMMARY';
     subtitle = `Till ${dashboardData.activeMonth}`;
-    body = `Outstanding balances till ${dashboardData.activeMonth}:\n\n${listText(dashboardData.defaulters)}\n\nTotal Expected Till Date: AED ${toMoney(c.expectedTill,0)}\nNet Paid Till Date: AED ${toMoney(c.netPaidTill,0)}\nTotal Outstanding Till Date: AED ${toMoney(c.outTill,0)}`;
-    stats = [`AED ${toMoney(c.outTill,0)}`, `${dashboardData.defaulters.length} Members`, 'Please Clear'];
+    body = `Avadhi Nidhi savings outstanding till ${dashboardData.activeMonth}:
+
+${listText(dashboardData.defaulters)}
+
+Opening Expected Per Member: AED ${toMoney(c.openingExpected,0)}
+Total Expected Till Date: AED ${toMoney(c.expectedTill,0)}
+Net Savings Paid Till Date: AED ${toMoney(c.netPaidTill,0)}
+Savings Outstanding Till Date: AED ${toMoney(c.outTill,0)}
+
+Note: This excludes SahayaNidhi and loan balances.`;
+    stats = [`AED ${toMoney(c.outTill,0)}`, `${dashboardData.defaulters.length} Members`, 'Savings Only'];
   } else if(type === 'loan-status'){
     title = 'LOAN STATUS';
     subtitle = `Updated Till ${dashboardData.activeMonth}`;
-    const pendingLoans = dashboardData.loanBalances.filter(x => x.balance > 0);
-    const loanText = pendingLoans.length ? pendingLoans.map((m,i)=>`${i+1}. ${m.name} - Balance AED ${toMoney(m.balance,0)} (${m.status})`).join('\n') : 'All active loans are cleared.';
-    body = `Loan Provided: AED ${toMoney(c.loanProvided,0)}\nLoan Repaid: AED ${toMoney(c.loanRepaid,0)}\nLoan Outstanding: AED ${toMoney(c.loanOutstanding,0)}\n\nPending Loan List:\n${loanText}`;
-    stats = [`Given ${toMoney(c.loanProvided,0)}`, `Repaid ${toMoney(c.loanRepaid,0)}`, `Bal ${toMoney(c.loanOutstanding,0)}`];
+    const pendingLoans = dashboardData.loanBalances.filter(x => x.balance > 0 || x.pendingThisMonth > 0);
+    const loanText = pendingLoans.length ? pendingLoans.map((m,i)=>`${i+1}. ${m.name} - This Month Pending AED ${toMoney(m.pendingThisMonth,0)} | Total Balance AED ${toMoney(m.balance,0)} (${m.status})`).join('\n') : 'All active loans are cleared.';
+    body = `Loan Provided Till ${dashboardData.activeMonth}: AED ${toMoney(c.loanProvided,0)}
+Loan Repaid Till ${dashboardData.activeMonth}: AED ${toMoney(c.loanRepaid,0)}
+Total Loan Balance: AED ${toMoney(c.loanOutstanding,0)}
+Loan Due This Month: AED ${toMoney(c.loanDueThisMonth,0)}
+Loan Pending This Month: AED ${toMoney(c.loanPendingThisMonth,0)}
+
+Loan Pending List:
+${loanText}`;
+    stats = [`Due ${toMoney(c.loanDueThisMonth,0)}`, `Pending ${toMoney(c.loanPendingThisMonth,0)}`, `Bal ${toMoney(c.loanOutstanding,0)}`];
   } else if(type === 'sahaya-reminder'){
-    title = 'SAHAYANIDHI';
-    subtitle = 'Compulsory AED 5 Monthly';
-    body = `From Mar-26 onwards:\n\nMonthly Nidhi: AED 100\nSahayaNidhi: AED 5\nTotal Monthly Payment: AED 105\n\nFor ${dashboardData.activeMonth}:\nExpected: AED ${toMoney(c.sahayaExpectedMonth,0)}\nPaid: AED ${toMoney(c.sahayaPaidMonth,0)}\nPending: AED ${toMoney(c.sahayaOutstandingMonth,0)}\n\nSahayaNidhi is calculated from actual payments received in the selected month.`;
-    stats = ['AED 5', 'Monthly', `Paid AED ${toMoney(c.sahayaPaidMonth,0)}`];
+    title = 'SAHAYANIDHI STATUS';
+    subtitle = `AED 5 Monthly - ${dashboardData.activeMonth}`;
+    const pending = (dashboardData.memberMonthlyStatus || []).filter(m => m.sahayaPending > 0);
+    const pendingText = pending.length ? pending.map((m,i)=>`${i+1}. ${m.name} - AED ${toMoney(m.sahayaPending,0)}`).join('\n') : 'No SahayaNidhi pending for this month.';
+    body = `From Mar-26 onwards:
+
+Avadhi Nidhi Savings: AED 100
+SahayaNidhi Charity: AED 5
+Total Monthly Payment: AED 105
+
+For ${dashboardData.activeMonth}:
+Expected: AED ${toMoney(c.sahayaExpectedMonth,0)}
+Paid: AED ${toMoney(c.sahayaPaidMonth,0)}
+Pending: AED ${toMoney(c.sahayaOutstandingMonth,0)}
+
+SahayaNidhi Pending Members:
+${pendingText}`;
+    stats = ['AED 5', `Paid ${toMoney(c.sahayaPaidMonth,0)}`, `Pending ${toMoney(c.sahayaOutstandingMonth,0)}`];
+  } else if(type === 'member-month-status'){
+    title = 'MONTHLY MEMBER STATUS';
+    subtitle = `Savings + Sahaya + Loan - ${dashboardData.activeMonth}`;
+    body = `Each member status for ${dashboardData.activeMonth}:
+
+${memberStatusText(dashboardData.memberMonthlyStatus)}
+
+Group Summary:
+Savings Pending: AED ${toMoney(c.monthlyOutstanding,0)}
+SahayaNidhi Pending: AED ${toMoney(c.sahayaOutstandingMonth,0)}
+Loan EMI Pending This Month: AED ${toMoney(c.loanPendingThisMonth,0)}`;
+    stats = [`Members ${dashboardData.totalMembers}`, `Sahaya ${toMoney(c.sahayaOutstandingMonth,0)}`, `Loan ${toMoney(c.loanPendingThisMonth,0)}`];
   } else if(type === 'fund-update'){
     title = 'CASH STATUS';
     subtitle = `Fund Balance - ${dashboardData.activeMonth}`;
-    body = `Fund Balance Cash in Hand:\nAED ${toMoney(c.fundBalance,2)}\n\nNet Member Payments Till ${dashboardData.activeMonth}: AED ${toMoney(c.netPaidTill,0)}\nLoan Provided Till ${dashboardData.activeMonth}: AED ${toMoney(c.loanProvided,0)}\nLoan Repaid Till ${dashboardData.activeMonth}: AED ${toMoney(c.loanRepaid,0)}\n\nFormula:\nNet Member Payments - Loan Provided + Loan Repaid`;
+    body = `Fund Balance Cash in Hand:
+AED ${toMoney(c.fundBalance,2)}
+
+Net Avadhi Nidhi Savings Till ${dashboardData.activeMonth}: AED ${toMoney(c.netPaidTill,0)}
+Loan Provided Till ${dashboardData.activeMonth}: AED ${toMoney(c.loanProvided,0)}
+Loan Repaid Till ${dashboardData.activeMonth}: AED ${toMoney(c.loanRepaid,0)}
+
+SahayaNidhi is excluded from savings cash and shown separately.
+
+Formula:
+Net Savings - Loan Provided + Loan Repaid`;
     stats = [`AED ${toMoney(c.fundBalance,0)}`, 'Cash in Hand', dashboardData.activeMonth];
   } else {
     title = 'GENERAL REMINDER';
     subtitle = `Avadhi Nidhi - ${dashboardData.activeMonth}`;
-    body = `Dear Members,\n\nPlease check your monthly payment and loan status. Kindly clear pending balances on time.\n\nCurrent Report Month: ${dashboardData.activeMonth}\nMonthly Pending Members: ${dashboardData.unpaidMembers.length}\nMonthly Outstanding: AED ${toMoney(c.monthlyOutstanding,0)}\nLoan Outstanding: AED ${toMoney(c.loanOutstanding,0)}\nFund Balance: AED ${toMoney(c.fundBalance,2)}`;
+    body = `Dear Members,
+
+Please check your Avadhi Nidhi savings, SahayaNidhi, and loan status. Kindly clear pending balances on time.
+
+Current Report Month: ${dashboardData.activeMonth}
+Savings Pending Members: ${dashboardData.unpaidMembers.length}
+Savings Pending This Month: AED ${toMoney(c.monthlyOutstanding,0)}
+SahayaNidhi Pending This Month: AED ${toMoney(c.sahayaOutstandingMonth,0)}
+Loan EMI Pending This Month: AED ${toMoney(c.loanPendingThisMonth,0)}
+Fund Balance: AED ${toMoney(c.fundBalance,2)}`;
     stats = [dashboardData.activeMonth, `${dashboardData.totalMembers} Members`, 'Thank You'];
   }
 
