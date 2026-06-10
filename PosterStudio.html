@@ -1,199 +1,197 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Avadhi Nidhi — Smart Poster Studio</title>
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&family=Gayathri:wght@700&display=swap" rel="stylesheet">
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
-  <style>
-    :root{
-      --bg: #0b1220;
-      --SahayaNidhi: #818cf8;
-      --panel: rgba(255,255,255,.06);
-      --panel2: rgba(255,255,255,.08);
-      --border: rgba(255,255,255,.10);
-      --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.68);
-      --good: #1db954;
-      --warn: #f5c542;
-      --bad: #ff5c5c;
-      --accent: #6ea8fe;
-    }
-
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
-    body{
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:
-        radial-gradient(1200px 600px at 10% 0%, rgba(110,168,254,.25), transparent 60%),
-        radial-gradient(900px 500px at 90% 10%, rgba(245,197,66,.18), transparent 55%),
-        radial-gradient(800px 500px at 70% 90%, rgba(29,185,84,.12), transparent 55%),
-        var(--bg);
-      color: var(--text);
-    }
-
-    .container-xl{ max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .glass{ background: var(--panel); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 16px 60px rgba(0,0,0,.35); backdrop-filter: blur(10px); }
-    .glass2{ background: var(--panel2); border: 1px solid var(--border); border-radius: 16px; }
-
-    .topbar{ padding: 16px 20px; display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap: wrap; }
-    .brand{ display:flex; align-items:center; gap:14px; }
-    .brand img{ width: 54px; height: 54px; border-radius: 50%; object-fit: cover; border:1px solid var(--border); background: rgba(255,255,255,.06); }
-    .brand-title h1{ margin:0; font-size: 1.35rem; font-weight: 800; letter-spacing: .2px; }
-    .brand-title .sub{ margin-top: 4px; font-size: .9rem; color: var(--muted); }
-
-    .chip{ display:inline-flex; align-items:center; gap:8px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: var(--muted); font-size: .85rem; white-space: nowrap; }
-    .chip strong{ color: var(--text); font-weight: 600; }
-    .dot{ width: 8px; height: 8px; border-radius: 999px; display:inline-block; background: rgba(255,255,255,.25); }
-    .dot.good{ background: var(--good); }
-    .dot.warn{ background: var(--warn); }
-    .dot.bad{ background: var(--bad); }
-    .dot.SahayaNidhi{ background: var(--SahayaNidhi); }
-
-    .btn-soft{ background: rgba(255,255,255,.06); border: 1px solid var(--border); color: var(--text); border-radius: 12px; padding: 10px 14px; font-weight: 500; text-decoration:none; cursor:pointer; }
-    .btn-soft:hover{ background: rgba(255,255,255,.10); color: var(--text); }
-    .btn-primary{ background: linear-gradient(135deg, var(--accent), var(--good)); border: none; color: white !important; border-radius: 12px; padding: 12px 20px; font-weight: 600; }
-
-    .data-grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 16px; margin: 20px 0; }
-    .data-card{ background: rgba(15,23,42,.9); border: 1px solid var(--border); border-radius: 16px; padding: 18px; min-height: 170px; }
-    .data-card h3{ margin: 0 0 12px 0; font-size: 1rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 8px; }
-    .big-value{ font-size:1.45rem; font-weight:800; color:var(--good); }
-    .small-line{ font-size:.85rem; color:var(--muted); margin-top:4px; }
-    .member-list{ max-height: 260px; overflow: auto; }
-    .member-item{ display:flex; justify-content:space-between; align-items:center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.08); gap:12px; }
-    .member-item:last-child{ border-bottom: none; }
-    .member-name{ font-weight: 500; }
-    .member-sub{ font-size:.72rem; color:var(--muted); }
-    .member-balance{ font-weight: 700; font-size: .9rem; text-align:right; white-space:nowrap; }
-
-    .poster-section{ background: rgba(15,23,42,.95); border: 1px solid var(--border); border-radius: 20px; padding: 24px; margin: 20px 0; }
-    #poster-canvas{ width: 100%; max-width: 430px; margin: 0 auto; background: #020617; border: 14px solid #1e293b; border-radius: 16px; padding: 28px 20px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 30px 90px rgba(0,0,0,.95); font-family: 'Manjari', Inter, system-ui, sans-serif; }
-    #poster-title{ font-size: 1.55rem; font-weight: 700; text-align: center; color: #e5e7eb; line-height: 1.25; text-transform: uppercase; }
-    #poster-subtitle{ font-size: 1.05rem; text-align: center; color: #a5b4fc; font-weight: 700; }
-    #poster-body{ font-size: .98rem; line-height: 1.65; color: #d1d5db; white-space: pre-wrap; }
-    #poster-footer{ font-size: .82rem; text-align: center; color: #9ca3af; border-top: 1px dashed rgba(148,163,184,.6); padding-top: 12px; margin-top: 8px; }
-    #poster-stats{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin: 12px 0; font-size: .85rem; }
-    .stat-item{ background: rgba(59,130,246,.15); padding: 8px 10px; border-radius: 8px; text-align: center; font-weight: 800; color:#e5e7eb; }
-
-    .layout-square{ max-width: 560px !important; aspect-ratio: 1 / 1; justify-content:center; }
-    .layout-story{ max-width: 430px !important; min-height: 720px; justify-content:center; }
-    .layout-a4{ max-width: 620px !important; min-height: 875px; justify-content:flex-start; }
-
-    .smart-actions{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
-    .btn-poster{ background: linear-gradient(135deg, var(--bad), var(--warn)); border: none; color: white; padding: 14px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; min-height: 56px; }
-    .btn-poster:hover{ transform: translateY(-2px); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
-    .btn-poster.good{ background: linear-gradient(135deg, var(--good), #10b981); }
-    .btn-poster.sahaya{ background: linear-gradient(135deg, var(--SahayaNidhi), #6366f1); }
-    .btn-poster.warn{ background: linear-gradient(135deg, #f59e0b, #d97706); }
-    .btn-poster.loan{ background: linear-gradient(135deg, #ef4444, #7f1d1d); }
-
-    .caption-box{ background: rgba(15,23,42,.9); border: 1px dashed rgba(148,163,184,.6); border-radius: 12px; padding: 16px; margin-top: 16px; }
-    .caption-text{ background: transparent; border: none; color: var(--text); font-size: .9rem; width: 100%; resize: vertical; min-height: 95px; }
-    .caption-text:focus{ outline:none; }
-    select{ background:rgba(255,255,255,.1); border:1px solid var(--border); color:var(--text); padding:8px 12px; border-radius:8px; }
-    select option{ background:#161f30; color:#fff; }
-    .loading{ opacity: 0.65; pointer-events: none; }
-    @media (max-width: 768px){ .container-xl{ padding: 12px; } #poster-canvas{ border-width: 10px; padding: 20px 16px; max-width: 100%; } .topbar > .d-flex{ width:100%; justify-content:flex-start; flex-wrap:wrap; } }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Avadhi Nidhi — Smart Poster Studio</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&family=Gayathri:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+:root{
+  --bg: #0b1220;
+  --SahayaNidhi: #818cf8;
+  --panel: rgba(255,255,255,.06);
+  --panel2: rgba(255,255,255,.08);
+  --border: rgba(255,255,255,.10);
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.68);
+  --good: #1db954;
+  --warn: #f5c542;
+  --bad: #ff5c5c;
+  --accent: #6ea8fe;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body{
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 10% 0%, rgba(110,168,254,.25), transparent 60%),
+    radial-gradient(900px 500px at 90% 10%, rgba(245,197,66,.18), transparent 55%),
+    radial-gradient(800px 500px at 70% 90%, rgba(29,185,84,.12), transparent 55%),
+    var(--bg);
+  color: var(--text);
+}
+.container-xl{ max-width: 1200px; margin: 0 auto; padding: 20px; }
+.glass{ background: var(--panel); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 16px 60px rgba(0,0,0,.35); backdrop-filter: blur(10px); }
+.glass2{ background: var(--panel2); border: 1px solid var(--border); border-radius: 16px; }
+.topbar{ padding: 16px 20px; display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap: wrap; }
+.brand{ display:flex; align-items:center; gap:14px; }
+.brand img{ width: 54px; height: 54px; border-radius: 50%; object-fit: cover; border:1px solid var(--border); background: rgba(255,255,255,.06); }
+.brand-title h1{ margin:0; font-size: 1.35rem; font-weight: 800; letter-spacing: .2px; }
+.brand-title .sub{ margin-top: 4px; font-size: .9rem; color: var(--muted); }
+.chip{ display:inline-flex; align-items:center; gap:8px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: var(--muted); font-size: .85rem; white-space: nowrap; }
+.chip strong{ color: var(--text); font-weight: 600; }
+.dot{ width: 8px; height: 8px; border-radius: 999px; display:inline-block; background: rgba(255,255,255,.25); }
+.dot.good{ background: var(--good); }
+.dot.warn{ background: var(--warn); }
+.dot.bad{ background: var(--bad); }
+.dot.SahayaNidhi{ background: var(--SahayaNidhi); }
+.btn-soft{ background: rgba(255,255,255,.06); border: 1px solid var(--border); color: var(--text); border-radius: 12px; padding: 10px 14px; font-weight: 500; text-decoration:none; cursor:pointer; }
+.btn-soft:hover{ background: rgba(255,255,255,.10); color: var(--text); }
+.btn-primary{ background: linear-gradient(135deg, var(--accent), var(--good)); border: none; color: white !important; border-radius: 12px; padding: 12px 20px; font-weight: 600; }
+.data-grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 16px; margin: 20px 0; }
+.data-card{ background: rgba(15,23,42,.9); border: 1px solid var(--border); border-radius: 16px; padding: 18px; min-height: 170px; }
+.data-card h3{ margin: 0 0 12px 0; font-size: 1rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.big-value{ font-size:1.45rem; font-weight:800; color:var(--good); }
+.small-line{ font-size:.85rem; color:var(--muted); margin-top:4px; }
+.member-list{ max-height: 260px; overflow: auto; }
+.member-item{ display:flex; justify-content:space-between; align-items:center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.08); gap:12px; }
+.member-item:last-child{ border-bottom: none; }
+.member-name{ font-weight: 500; }
+.member-sub{ font-size:.72rem; color:var(--muted); }
+.member-balance{ font-weight: 700; font-size: .9rem; text-align:right; white-space:nowrap; }
+.poster-section{ background: rgba(15,23,42,.95); border: 1px solid var(--border); border-radius: 20px; padding: 24px; margin: 20px 0; }
+#poster-canvas{ width: 100%; max-width: 430px; margin: 0 auto; background: #020617; border: 14px solid #1e293b; border-radius: 16px; padding: 28px 20px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 30px 90px rgba(0,0,0,.95); font-family: 'Manjari', Inter, system-ui, sans-serif; }
+#poster-title{ font-size: 1.55rem; font-weight: 700; text-align: center; color: #e5e7eb; line-height: 1.25; text-transform: uppercase; }
+#poster-subtitle{ font-size: 1.05rem; text-align: center; color: #a5b4fc; font-weight: 700; }
+#poster-body{ font-size: .98rem; line-height: 1.65; color: #d1d5db; white-space: pre-wrap; }
+#poster-footer{ font-size: .82rem; text-align: center; color: #9ca3af; border-top: 1px dashed rgba(148,163,184,.6); padding-top: 12px; margin-top: 8px; }
+#poster-stats{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin: 12px 0; font-size: .85rem; }
+.stat-item{ background: rgba(59,130,246,.15); padding: 8px 10px; border-radius: 8px; text-align: center; font-weight: 800; color:#e5e7eb; }
+.layout-square{ max-width: 560px !important; aspect-ratio: 1 / 1; justify-content:center; }
+.layout-story{ max-width: 430px !important; min-height: 720px; justify-content:center; }
+.layout-a4{ max-width: 620px !important; min-height: 875px; justify-content:flex-start; }
+.smart-actions{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
+.btn-poster{ background: linear-gradient(135deg, var(--bad), var(--warn)); border: none; color: white; padding: 14px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; min-height: 56px; }
+.btn-poster:hover{ transform: translateY(-2px); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+.btn-poster.good{ background: linear-gradient(135deg, var(--good), #10b981); }
+.btn-poster.sahaya{ background: linear-gradient(135deg, var(--SahayaNidhi), #6366f1); }
+.btn-poster.warn{ background: linear-gradient(135deg, #f59e0b, #d97706); }
+.btn-poster.loan{ background: linear-gradient(135deg, #ef4444, #7f1d1d); }
+.caption-box{ background: rgba(15,23,42,.9); border: 1px dashed rgba(148,163,184,.6); border-radius: 12px; padding: 16px; margin-top: 16px; }
+.caption-text{ background: transparent; border: none; color: var(--text); font-size: .9rem; width: 100%; resize: vertical; min-height: 95px; }
+.caption-text:focus{ outline:none; }
+select{ background:rgba(255,255,255,.1); border:1px solid var(--border); color:var(--text); padding:8px 12px; border-radius:8px; }
+select option{ background:#161f30; color:#fff; }
+.loading{ opacity: 0.65; pointer-events: none; }
+@media (max-width: 768px){
+  .container-xl{ padding: 12px; }
+  #poster-canvas{ border-width: 10px; padding: 20px 16px; max-width: 100%; }
+  .topbar > .d-flex{ width:100%; justify-content:flex-start; flex-wrap:wrap; }
+}
+</style>
 </head>
 <body>
-  <div class="container-xl">
-    <div class="glass topbar">
-      <div class="brand">
-        <img src="Images/an-Logo.png" alt="Avadhi Nidhi Logo" onerror="this.style.display='none'"/>
-        <div class="brand-title">
-          <h1>Smart Poster Studio</h1>
-          <div class="sub">Announcements from the same CSV logic used in Dashboard</div>
-        </div>
-      </div>
-      <div class="d-flex align-items-center gap-2">
-        <a href="index.html" class="btn-soft">← Dashboard</a>
-        <div class="chip"><span class="dot" id="dataDot"></span><span id="dataStatus">Loading CSVs...</span></div>
-        <button class="btn-soft" onclick="loadData()" id="refreshBtn">🔄 Refresh</button>
+<div class="container-xl">
+  <div class="glass topbar">
+    <div class="brand">
+      <img src="Images/an-Logo.png" alt="Avadhi Nidhi Logo" onerror="this.style.display='none'"/>
+      <div class="brand-title">
+        <h1>Smart Poster Studio</h1>
+        <div class="sub">Announcements from corrected CSV report logic</div>
       </div>
     </div>
+    <div class="d-flex align-items-center gap-2">
+      <a href="index.html" class="btn-soft">← Dashboard</a>
+      <div class="chip"><span class="dot" id="dataDot"></span><span id="dataStatus">Loading CSVs...</span></div>
+      <button class="btn-soft" onclick="loadData()" id="refreshBtn">🔄 Refresh</button>
+    </div>
+  </div>
 
-    <div class="glass p-4 mt-4">
-      <h2 style="margin:0 0 20px 0; color:var(--accent);">📊 Live CSV Analysis</h2>
-      <div class="data-grid">
-        <div class="data-card">
-          <h3><span class="dot good"></span>Current Month</h3>
-          <div class="big-value" id="activeMonth">--</div>
-          <div class="small-line">Monthly Expected: <span id="expectedMonth">--</span></div>
-          <div class="small-line">Paid This Month - SahayaNidhi: <span id="paidMonth">--</span></div>
-          <div class="small-line">Outstanding This Month: <span id="outstandingMonth">--</span></div>
-        </div>
-        <div class="data-card">
-          <h3><span class="dot bad"></span>Unpaid This Month</h3>
-          <div class="member-list" id="unpaidList"></div>
-          <div class="small-line" style="color:var(--bad);" id="unpaidCount">-- members</div>
-        </div>
-        <div class="data-card">
-          <h3><span class="dot warn"></span>Top Outstanding</h3>
-          <div class="member-list" id="defaultersList"></div>
-          <div class="small-line" style="color:var(--warn);" id="defaultersCount">-- members</div>
-        </div>
-        <div class="data-card">
-          <h3><span class="dot SahayaNidhi"></span>Fund Status</h3>
-          <div class="big-value" id="fundBalance">--</div>
-          <div class="small-line" id="sahayaStatus">--</div>
-          <div class="small-line" id="loanStatus">--</div>
-        </div>
+  <div class="glass p-4 mt-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+      <h2 style="margin:0; color:var(--accent);">📊 Live CSV Analysis</h2>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="small-line">Report Month:</span>
+        <select id="reportMonth" onchange="changeReportMonth()"></select>
       </div>
     </div>
-
-    <div class="glass p-4 mt-4">
-      <h2 style="margin:0 0 20px 0; color:var(--accent);">🤖 One-Click Smart Posters</h2>
-      <div class="smart-actions">
-        <button class="btn-poster bad" id="btnMonthlyUnpaid" onclick="generatePoster('monthly-unpaid')">📢 Monthly Unpaid</button>
-        <button class="btn-poster warn" id="btnTopDefaulters" onclick="generatePoster('top-defaulters')">⚠️ Top Outstanding</button>
-        <button class="btn-poster loan" id="btnLoanStatus" onclick="generatePoster('loan-status')">🏦 Loan Status</button>
-        <button class="btn-poster sahaya" onclick="generatePoster('sahaya-reminder')">💜 SahayaNidhi AED 5</button>
-        <button class="btn-poster good" onclick="generatePoster('fund-update')">💰 Fund Update</button>
-        <button class="btn-poster" onclick="generatePoster('general-reminder')">👋 General Reminder</button>
+    <div class="data-grid">
+      <div class="data-card">
+        <h3><span class="dot good"></span>Current Report Month</h3>
+        <div class="big-value" id="activeMonth">--</div>
+        <div class="small-line">Monthly Expected: <span id="expectedMonth">--</span></div>
+        <div class="small-line">Paid This Month - Monthly Payment: <span id="paidMonth">--</span></div>
+        <div class="small-line">Outstanding This Month: <span id="outstandingMonth">--</span></div>
       </div>
-    </div>
-
-    <div class="poster-section">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:12px; flex-wrap:wrap;">
-        <h3 style="margin:0; color:var(--accent);">🖼️ Live Preview</h3>
-        <div>
-          <button class="btn-soft" onclick="downloadPoster()" style="margin-right:8px;">⬇ Download HD</button>
-          <button class="btn-primary" onclick="copyWhatsApp()">📱 Copy WhatsApp</button>
-        </div>
+      <div class="data-card">
+        <h3><span class="dot bad"></span>Unpaid This Month</h3>
+        <div class="member-list" id="unpaidList"></div>
+        <div class="small-line" style="color:var(--bad);" id="unpaidCount">-- members</div>
       </div>
-      <div style="text-align:center; margin-bottom:16px;">
-        <select id="posterSize" onchange="resizePoster()">
-          <option value="story">WhatsApp Status</option>
-          <option value="square">Square</option>
-          <option value="a4">A4 Print</option>
-        </select>
+      <div class="data-card">
+        <h3><span class="dot warn"></span>Top Outstanding</h3>
+        <div class="member-list" id="defaultersList"></div>
+        <div class="small-line" style="color:var(--warn);" id="defaultersCount">-- members</div>
       </div>
-
-      <div id="poster-canvas" class="layout-story">
-        <div id="poster-title">AVADHI NIDHI</div>
-        <div id="poster-subtitle">Click a Smart Poster button above</div>
-        <div id="poster-stats"></div>
-        <div id="poster-body">Loading live data from your CSV files...</div>
-        <div id="poster-footer">Treasurer – Avadhi Nidhi | 2026</div>
-      </div>
-
-      <div class="caption-box">
-        <div style="font-size:.8rem; color:var(--muted); margin-bottom:8px;">📝 WhatsApp Caption</div>
-        <textarea class="caption-text" id="whatsappCaption" readonly placeholder="Caption appears here..."></textarea>
+      <div class="data-card">
+        <h3><span class="dot SahayaNidhi"></span>Fund Status</h3>
+        <div class="big-value" id="fundBalance">--</div>
+        <div class="small-line" id="sahayaStatus">--</div>
+        <div class="small-line" id="loanStatus">--</div>
       </div>
     </div>
   </div>
 
+  <div class="glass p-4 mt-4">
+    <h2 style="margin:0 0 20px 0; color:var(--accent);">🤖 One-Click Smart Posters</h2>
+    <div class="smart-actions">
+      <button class="btn-poster bad" id="btnMonthlyUnpaid" onclick="generatePoster('monthly-unpaid')">📢 Monthly Unpaid</button>
+      <button class="btn-poster warn" id="btnTopDefaulters" onclick="generatePoster('top-defaulters')">⚠️ Top Outstanding</button>
+      <button class="btn-poster loan" id="btnLoanStatus" onclick="generatePoster('loan-status')">🏦 Loan Status</button>
+      <button class="btn-poster sahaya" onclick="generatePoster('sahaya-reminder')">💜 SahayaNidhi AED 5</button>
+      <button class="btn-poster good" onclick="generatePoster('fund-update')">💰 Fund Update</button>
+      <button class="btn-poster" onclick="generatePoster('general-reminder')">👋 General Reminder</button>
+    </div>
+  </div>
+
+  <div class="poster-section">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:12px; flex-wrap:wrap;">
+      <h3 style="margin:0; color:var(--accent);">🖼️ Live Preview</h3>
+      <div>
+        <button class="btn-soft" onclick="downloadPoster()" style="margin-right:8px;">⬇ Download HD</button>
+        <button class="btn-primary" onclick="copyWhatsApp()">📱 Copy WhatsApp</button>
+      </div>
+    </div>
+    <div style="text-align:center; margin-bottom:16px;">
+      <select id="posterSize" onchange="resizePoster()">
+        <option value="story">WhatsApp Status</option>
+        <option value="square">Square</option>
+        <option value="a4">A4 Print</option>
+      </select>
+    </div>
+    <div id="poster-canvas" class="layout-story">
+      <div id="poster-title">AVADHI NIDHI</div>
+      <div id="poster-subtitle">Click a Smart Poster button above</div>
+      <div id="poster-stats"></div>
+      <div id="poster-body">Loading live data from your CSV files...</div>
+      <div id="poster-footer">Treasurer – Avadhi Nidhi | 2026</div>
+    </div>
+    <div class="caption-box">
+      <div style="font-size:.8rem; color:var(--muted); margin-bottom:8px;">📝 WhatsApp Caption</div>
+      <textarea class="caption-text" id="whatsappCaption" readonly placeholder="Caption appears here..."></textarea>
+    </div>
+  </div>
+</div>
+
 <script>
-const PAYMENTS_FILES = { 2025: "2025_payments.csv", 2026: "2026_payments.csv" };
+const PAYMENTS_FILES = {
+  2025: "2025_payments.csv",
+  2026: "2026_payments.csv"
+};
 const CSV_LOANS = "Loan.csv";
 const MONTHLY_CONTRIBUTION = 100;
 const SAHAYA_AMOUNT = 5;
@@ -201,15 +199,38 @@ const SAHAYA_START_MONTH = "Mar-26";
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 let dashboardData = {
-  payments2025: [], payments2026: [], payments: [], loans: [],
-  paymentMonthKeys: [], loanMonthKeys: [], allMonthKeys: [], activeMonth: '', activeMonthDate: null,
-  totalMembers: 0, unpaidMembers: [], defaulters: [], loanBalances: [], computed: {}
+  payments2025: [],
+  payments2026: [],
+  payments: [],
+  loans: [],
+  paymentMonthKeys: [],
+  loanMonthKeys: [],
+  allMonthKeys: [],
+  activeMonth: '',
+  activeMonthDate: null,
+  totalMembers: 0,
+  unpaidMembers: [],
+  defaulters: [],
+  loanBalances: [],
+  computed: {}
 };
 
 const $ = (id) => document.getElementById(id);
-function safeNum(v){ const x = Number((v ?? '').toString().trim()); return isFinite(x) ? x : 0; }
-function toMoney(n, dp=0){ const x = Number(n); return isFinite(x) ? x.toLocaleString(undefined,{minimumFractionDigits:dp, maximumFractionDigits:dp}) : '0'; }
-function isMonthKey(k){ return /^[A-Za-z]{3}-\d{2}$/.test((k || '').trim()); }
+
+function safeNum(v){
+  const x = Number((v ?? '').toString().replace(/,/g, '').trim());
+  return isFinite(x) ? x : 0;
+}
+
+function toMoney(n, dp=0){
+  const x = Number(n);
+  return isFinite(x) ? x.toLocaleString(undefined,{minimumFractionDigits:dp, maximumFractionDigits:dp}) : '0';
+}
+
+function isMonthKey(k){
+  return /^[A-Za-z]{3}-\d{2}$/.test((k || '').trim());
+}
+
 function monthKeyToDate(k){
   const s = (k || '').trim();
   const m = s.slice(0,3);
@@ -218,14 +239,19 @@ function monthKeyToDate(k){
   if (mi < 0 || !isFinite(yy)) return null;
   return new Date(2000 + yy, mi, 1);
 }
+
 function sortMonthKeys(keys){
   return [...new Set((keys || []).filter(isMonthKey))].sort((a,b) => monthKeyToDate(a) - monthKeyToDate(b));
 }
+
 function extractMonthKeys(rows){
   const set = new Set();
-  (rows || []).forEach(r => Object.keys(r || {}).forEach(k => { if (isMonthKey(k)) set.add(k.trim()); }));
+  (rows || []).forEach(r => Object.keys(r || {}).forEach(k => {
+    if (isMonthKey(k)) set.add(k.trim());
+  }));
   return [...set];
 }
+
 function sumMonths(row, monthKeys, upToKey = null){
   const limitDate = upToKey ? monthKeyToDate(upToKey) : null;
   let sum = 0;
@@ -236,17 +262,20 @@ function sumMonths(row, monthKeys, upToKey = null){
   });
   return sum;
 }
+
 function isSahayaMonth(k){
   const d = monthKeyToDate(k);
   const start = monthKeyToDate(SAHAYA_START_MONTH);
   return !!(d && start && d >= start);
 }
+
 function getSahayaMonthsPassed(activeKey){
   const current = monthKeyToDate(activeKey);
   const start = monthKeyToDate(SAHAYA_START_MONTH);
   if (!current || !start || current < start) return 0;
   return (current.getFullYear() - start.getFullYear()) * 12 + (current.getMonth() - start.getMonth()) + 1;
 }
+
 function normalizeRows(rows){
   return (rows || []).map(r => {
     const out = {};
@@ -257,6 +286,7 @@ function normalizeRows(rows){
     return out;
   });
 }
+
 function parseDateDDMMYY(dateStr){
   const s = (dateStr || '').toString().trim();
   if (!s) return null;
@@ -277,6 +307,7 @@ function parseDateDDMMYY(dateStr){
   const d = new Date(s);
   return isNaN(d) ? null : d;
 }
+
 function determineActiveMonth(allMonthKeys){
   const today = new Date();
   const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -288,6 +319,7 @@ function determineActiveMonth(allMonthKeys){
   if (!candidate && allMonthKeys.length) candidate = allMonthKeys[allMonthKeys.length - 1];
   return candidate;
 }
+
 async function parseCSV(file){
   const sep = file.includes('?') ? '&' : '?';
   const res = await fetch(`${file}${sep}v=${Date.now()}`, { cache: 'no-store' });
@@ -295,6 +327,7 @@ async function parseCSV(file){
   const text = await res.text();
   return Papa.parse(text, { header: true, skipEmptyLines: 'greedy', transformHeader: h => h.trim() }).data;
 }
+
 async function loadData(){
   document.body.classList.add('loading');
   $('dataStatus').textContent = 'Analyzing CSVs...';
@@ -311,11 +344,14 @@ async function loadData(){
     dashboardData.payments = dashboardData.payments2026;
     dashboardData.loans = normalizeRows(loanRaw).filter(r => r.SN && r.Name && r.Name !== 'TOTAL');
     dashboardData.totalMembers = dashboardData.payments.length;
-
     dashboardData.paymentMonthKeys = sortMonthKeys(extractMonthKeys(dashboardData.payments));
     dashboardData.loanMonthKeys = sortMonthKeys(extractMonthKeys(dashboardData.loans));
     dashboardData.allMonthKeys = sortMonthKeys([...dashboardData.paymentMonthKeys, ...dashboardData.loanMonthKeys]);
-    dashboardData.activeMonth = determineActiveMonth(dashboardData.allMonthKeys) || '—';
+
+    populateReportMonthSelect();
+
+    const selected = $('reportMonth').value;
+    dashboardData.activeMonth = selected || determineActiveMonth(dashboardData.allMonthKeys) || '—';
     dashboardData.activeMonthDate = monthKeyToDate(dashboardData.activeMonth);
 
     computeDashboardData();
@@ -333,44 +369,106 @@ async function loadData(){
     document.body.classList.remove('loading');
   }
 }
+
+function populateReportMonthSelect(){
+  const select = $('reportMonth');
+  const previous = select.value;
+  const months = dashboardData.allMonthKeys.length ? dashboardData.allMonthKeys : dashboardData.paymentMonthKeys;
+  const defaultMonth = determineActiveMonth(months) || months[months.length - 1] || '';
+
+  select.innerHTML = months.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+  if (previous && months.includes(previous)) select.value = previous;
+  else if (defaultMonth) select.value = defaultMonth;
+}
+
+function changeReportMonth(){
+  dashboardData.activeMonth = $('reportMonth').value || determineActiveMonth(dashboardData.allMonthKeys) || '—';
+  dashboardData.activeMonthDate = monthKeyToDate(dashboardData.activeMonth);
+  computeDashboardData();
+  updateDashboard();
+  $('dataStatus').textContent = `Live: ${dashboardData.activeMonth}`;
+  generatePoster('fund-update');
+}
+
+function calcMonthlySplit(rawAmount, activeKey){
+  const raw = safeNum(rawAmount);
+  if (!isSahayaMonth(activeKey)) {
+    return { raw, monthlyNet: raw, sahayaPaid: 0, monthlyOutstanding: Math.max(0, MONTHLY_CONTRIBUTION - raw) };
+  }
+
+  // Correct rule: SahayaNidhi is counted only when a member actually paid something that month.
+  // AED 105 means AED 100 monthly + AED 5 SahayaNidhi.
+  // AED 100 means monthly AED 95 + SahayaNidhi AED 5 under this combined-payment system.
+  const sahayaPaid = raw > 0 ? Math.min(SAHAYA_AMOUNT, raw) : 0;
+  const monthlyNet = Math.max(0, raw - sahayaPaid);
+  const monthlyOutstanding = Math.max(0, MONTHLY_CONTRIBUTION - monthlyNet);
+  return { raw, monthlyNet, sahayaPaid, monthlyOutstanding };
+}
+
 function computeDashboardData(){
   const active = dashboardData.activeMonth;
-  const mIdx = active && active !== '—' ? (MONTH_NAMES.indexOf(active.slice(0,3)) + 1) : 0;
+  const activeDate = monthKeyToDate(active);
   const members = dashboardData.totalMembers;
   const sahayaMonthsPassed = getSahayaMonthsPassed(active);
+  const monthsTillActive = dashboardData.paymentMonthKeys.filter(k => {
+    const d = monthKeyToDate(k);
+    return d && activeDate && d <= activeDate;
+  }).length;
 
-  let grossPaidMonth = 0;
+  let paidMonth = 0;
   let grossPaidTill = 0;
   let monthlyOutstanding = 0;
+  let sahayaPaidMonth = 0;
+  let sahayaPaidTill = 0;
   let unpaidMembers = [];
   let defaulters = [];
 
-  const expectedTillPerMember = 1400 + (mIdx * MONTHLY_CONTRIBUTION);
+  const expectedMonth = members * MONTHLY_CONTRIBUTION;
+  const expectedTillPerMember = safeNum(dashboardData.payments[0]?.OB) + (monthsTillActive * MONTHLY_CONTRIBUTION);
 
   dashboardData.payments.forEach(r => {
-    const rawCurrent = safeNum(r[active]);
-    grossPaidMonth += rawCurrent;
-    const currentNet = isSahayaMonth(active) ? Math.max(0, rawCurrent - SAHAYA_AMOUNT) : rawCurrent;
-    const currentOut = Math.max(0, MONTHLY_CONTRIBUTION - currentNet);
-    if (currentOut > 0) unpaidMembers.push({ sn:r.SN, name:r.Name, balance:currentOut, paidNet:currentNet });
-    monthlyOutstanding += currentOut;
+    const split = calcMonthlySplit(r[active], active);
+    paidMonth += split.monthlyNet;
+    sahayaPaidMonth += split.sahayaPaid;
+    monthlyOutstanding += split.monthlyOutstanding;
 
-    const grossTill = safeNum(r.OB) + sumMonths(r, dashboardData.paymentMonthKeys, null);
+    if (split.monthlyOutstanding > 0) {
+      unpaidMembers.push({
+        sn: r.SN,
+        name: r.Name,
+        balance: split.monthlyOutstanding,
+        paidNet: split.monthlyNet,
+        rawPaid: split.raw
+      });
+    }
+
+    const grossTill = safeNum(r.OB) + sumMonths(r, dashboardData.paymentMonthKeys, active);
     grossPaidTill += grossTill;
-    const netTill = grossTill - (sahayaMonthsPassed * SAHAYA_AMOUNT);
+
+    let rowSahayaPaidTill = 0;
+    dashboardData.paymentMonthKeys.forEach(k => {
+      const d = monthKeyToDate(k);
+      if (!d || !activeDate || d > activeDate) return;
+      rowSahayaPaidTill += calcMonthlySplit(r[k], k).sahayaPaid;
+    });
+    sahayaPaidTill += rowSahayaPaidTill;
+
+    const netTill = grossTill - rowSahayaPaidTill;
     const outTill = Math.max(0, expectedTillPerMember - netTill);
-    if (outTill > 0) defaulters.push({ sn:r.SN, name:r.Name, balance:outTill, paidNet:netTill });
+    if (outTill > 0) {
+      defaulters.push({ sn:r.SN, name:r.Name, balance:outTill, paidNet:netTill });
+    }
   });
 
-  unpaidMembers.sort((a,b) => b.balance - a.balance || String(a.name).localeCompare(String(b.name)));
-  defaulters.sort((a,b) => b.balance - a.balance || String(a.name).localeCompare(String(b.name)));
+  unpaidMembers.sort((a,b) => b.balance - a.balance || Number(a.sn) - Number(b.sn));
+  defaulters.sort((a,b) => b.balance - a.balance || Number(a.sn) - Number(b.sn));
 
   let loanProvided = 0;
   let loanRepaid = 0;
   let loanBalances = [];
   dashboardData.loans.forEach(l => {
     const amount = safeNum(l['LOAN AMOUNT']);
-    const repaid = sumMonths(l, dashboardData.allMonthKeys, null);
+    const repaid = sumMonths(l, dashboardData.loanMonthKeys, active);
     const balance = Math.max(0, amount - repaid);
     if (amount > 0) {
       loanProvided += amount;
@@ -382,30 +480,46 @@ function computeDashboardData(){
         if (issueDate) {
           const deadline = new Date(issueDate.getFullYear(), issueDate.getMonth() + 8, issueDate.getDate());
           if (new Date() > deadline) status = 'Overdue';
+        } else {
+          status = 'Date Missing';
         }
       }
       loanBalances.push({ sn:l.SN, name:l.Name, amount, repaid, balance, status });
     }
   });
-  loanBalances.sort((a,b) => b.balance - a.balance || String(a.name).localeCompare(String(b.name)));
+  loanBalances.sort((a,b) => b.balance - a.balance || Number(a.sn) - Number(b.sn));
 
-  const paidMonth = grossPaidMonth - (isSahayaMonth(active) ? members * SAHAYA_AMOUNT : 0);
-  const netPaidTill = grossPaidTill - (members * sahayaMonthsPassed * SAHAYA_AMOUNT);
-  const expectedMonth = members * MONTHLY_CONTRIBUTION;
+  const netPaidTill = grossPaidTill - sahayaPaidTill;
   const expectedTill = expectedTillPerMember * members;
-  const sahayaCompulsoryTotal = members * sahayaMonthsPassed * SAHAYA_AMOUNT;
+  const sahayaExpectedMonth = isSahayaMonth(active) ? members * SAHAYA_AMOUNT : 0;
+  const sahayaExpectedTill = members * sahayaMonthsPassed * SAHAYA_AMOUNT;
   const fundBalance = netPaidTill - loanProvided + loanRepaid;
 
   dashboardData.unpaidMembers = unpaidMembers;
   dashboardData.defaulters = defaulters;
   dashboardData.loanBalances = loanBalances;
   dashboardData.computed = {
-    mIdx, sahayaMonthsPassed, expectedMonth, paidMonth, monthlyOutstanding,
-    expectedTill, netPaidTill, outTill: Math.max(0, expectedTill - netPaidTill),
-    sahayaCompulsoryTotal, loanProvided, loanRepaid, loanOutstanding: loanProvided - loanRepaid,
+    monthsTillActive,
+    sahayaMonthsPassed,
+    expectedMonth,
+    paidMonth,
+    monthlyOutstanding,
+    expectedTill,
+    netPaidTill,
+    outTill: Math.max(0, expectedTill - netPaidTill),
+    sahayaExpectedMonth,
+    sahayaPaidMonth,
+    sahayaOutstandingMonth: Math.max(0, sahayaExpectedMonth - sahayaPaidMonth),
+    sahayaExpectedTill,
+    sahayaPaidTill,
+    sahayaOutstandingTill: Math.max(0, sahayaExpectedTill - sahayaPaidTill),
+    loanProvided,
+    loanRepaid,
+    loanOutstanding: Math.max(0, loanProvided - loanRepaid),
     fundBalance
   };
 }
+
 function updateDashboard(){
   const c = dashboardData.computed;
   $('activeMonth').textContent = dashboardData.activeMonth;
@@ -413,7 +527,7 @@ function updateDashboard(){
   $('paidMonth').textContent = `AED ${toMoney(c.paidMonth,0)}`;
   $('outstandingMonth').textContent = `AED ${toMoney(c.monthlyOutstanding,0)}`;
   $('fundBalance').textContent = `AED ${toMoney(c.fundBalance,2)}`;
-  $('sahayaStatus').textContent = `SahayaNidhi excluded from cash: AED ${toMoney(c.sahayaCompulsoryTotal,0)}`;
+  $('sahayaStatus').textContent = `SahayaNidhi: Expected AED ${toMoney(c.sahayaExpectedMonth,0)} | Paid AED ${toMoney(c.sahayaPaidMonth,0)} | Pending AED ${toMoney(c.sahayaOutstandingMonth,0)}`;
   $('loanStatus').textContent = `Loan Provided: AED ${toMoney(c.loanProvided,0)} | Repaid: AED ${toMoney(c.loanRepaid,0)} | Outstanding: AED ${toMoney(c.loanOutstanding,0)}`;
   $('unpaidCount').textContent = `${dashboardData.unpaidMembers.length} members`;
   $('defaultersCount').textContent = `${dashboardData.defaulters.length} members`;
@@ -421,18 +535,25 @@ function updateDashboard(){
   $('btnTopDefaulters').textContent = `⚠️ Top Outstanding (${dashboardData.defaulters.length})`;
   $('btnLoanStatus').textContent = `🏦 Loan Status (${dashboardData.loanBalances.filter(x => x.balance > 0).length})`;
 
+  // Dashboard preview remains short, but the poster/caption report uses the FULL list.
   $('unpaidList').innerHTML = renderMiniList(dashboardData.unpaidMembers.slice(0,8), 'AED');
   $('defaultersList').innerHTML = renderMiniList(dashboardData.defaulters.slice(0,8), 'AED');
 }
+
 function renderMiniList(list, prefix){
   if (!list.length) return '<div class="small-line">No pending balance found.</div>';
   return list.map(m => `<div class="member-item"><div><div class="member-name">${escapeHtml(m.name)}</div><div class="member-sub">SN: ${escapeHtml(m.sn)}</div></div><div class="member-balance" style="color:var(--bad);">${prefix} ${toMoney(m.balance,0)}</div></div>`).join('');
 }
-function escapeHtml(s){ return String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-function topListText(list, limit=10, field='balance'){
+
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+}
+
+function listText(list, limit = Infinity, field='balance'){
   if (!list.length) return 'No pending members.';
   return list.slice(0, limit).map((m,i) => `${i+1}. ${m.name} - AED ${toMoney(m[field],0)}`).join('\n');
 }
+
 function generatePoster(type){
   const c = dashboardData.computed;
   let title = 'AVADHI NIDHI', subtitle = dashboardData.activeMonth, body = '', stats = [];
@@ -440,39 +561,34 @@ function generatePoster(type){
   if(type === 'monthly-unpaid'){
     title = 'PAYMENT REMINDER';
     subtitle = `${dashboardData.activeMonth} Pending List`;
-    body = `Members with pending monthly payment for ${dashboardData.activeMonth}:\n\n${topListText(dashboardData.unpaidMembers, 12)}\n\nOutstanding This Month: AED ${toMoney(c.monthlyOutstanding,0)}\n\nNote: Paid This Month is shown after compulsory SahayaNidhi deduction.`;
+    body = `Members with pending monthly payment for ${dashboardData.activeMonth}:\n\n${listText(dashboardData.unpaidMembers)}\n\nMonthly Expected: AED ${toMoney(c.expectedMonth,0)}\nPaid Monthly Payment: AED ${toMoney(c.paidMonth,0)}\nOutstanding This Month: AED ${toMoney(c.monthlyOutstanding,0)}\n\nSahayaNidhi Expected: AED ${toMoney(c.sahayaExpectedMonth,0)}\nSahayaNidhi Paid: AED ${toMoney(c.sahayaPaidMonth,0)}\nSahayaNidhi Pending: AED ${toMoney(c.sahayaOutstandingMonth,0)}`;
     stats = [dashboardData.activeMonth, `Pending: ${dashboardData.unpaidMembers.length}`, `AED ${toMoney(c.monthlyOutstanding,0)}`];
-  }
-  else if(type === 'top-defaulters'){
+  } else if(type === 'top-defaulters'){
     title = 'OUTSTANDING SUMMARY';
     subtitle = `Till ${dashboardData.activeMonth}`;
-    body = `Top outstanding balances till ${dashboardData.activeMonth}:\n\n${topListText(dashboardData.defaulters, 10)}\n\nTotal Outstanding Till Date: AED ${toMoney(c.outTill,0)}`;
+    body = `Outstanding balances till ${dashboardData.activeMonth}:\n\n${listText(dashboardData.defaulters)}\n\nTotal Expected Till Date: AED ${toMoney(c.expectedTill,0)}\nNet Paid Till Date: AED ${toMoney(c.netPaidTill,0)}\nTotal Outstanding Till Date: AED ${toMoney(c.outTill,0)}`;
     stats = [`AED ${toMoney(c.outTill,0)}`, `${dashboardData.defaulters.length} Members`, 'Please Clear'];
-  }
-  else if(type === 'loan-status'){
+  } else if(type === 'loan-status'){
     title = 'LOAN STATUS';
     subtitle = `Updated Till ${dashboardData.activeMonth}`;
     const pendingLoans = dashboardData.loanBalances.filter(x => x.balance > 0);
-    const loanText = pendingLoans.length ? pendingLoans.slice(0,10).map((m,i)=>`${i+1}. ${m.name} - Balance AED ${toMoney(m.balance,0)} (${m.status})`).join('\n') : 'All active loans are cleared.';
+    const loanText = pendingLoans.length ? pendingLoans.map((m,i)=>`${i+1}. ${m.name} - Balance AED ${toMoney(m.balance,0)} (${m.status})`).join('\n') : 'All active loans are cleared.';
     body = `Loan Provided: AED ${toMoney(c.loanProvided,0)}\nLoan Repaid: AED ${toMoney(c.loanRepaid,0)}\nLoan Outstanding: AED ${toMoney(c.loanOutstanding,0)}\n\nPending Loan List:\n${loanText}`;
     stats = [`Given ${toMoney(c.loanProvided,0)}`, `Repaid ${toMoney(c.loanRepaid,0)}`, `Bal ${toMoney(c.loanOutstanding,0)}`];
-  }
-  else if(type === 'sahaya-reminder'){
+  } else if(type === 'sahaya-reminder'){
     title = 'SAHAYANIDHI';
     subtitle = 'Compulsory AED 5 Monthly';
-    body = `From Mar-26 onwards:\n\nMonthly Nidhi: AED 100\nSahayaNidhi: AED 5\nTotal Monthly Payment: AED 105\n\nThe AED 5 SahayaNidhi is deducted automatically every month for all members and excluded from member balance.`;
-    stats = ['AED 5', 'Monthly', `Total AED ${toMoney(c.sahayaCompulsoryTotal,0)}`];
-  }
-  else if(type === 'fund-update'){
+    body = `From Mar-26 onwards:\n\nMonthly Nidhi: AED 100\nSahayaNidhi: AED 5\nTotal Monthly Payment: AED 105\n\nFor ${dashboardData.activeMonth}:\nExpected: AED ${toMoney(c.sahayaExpectedMonth,0)}\nPaid: AED ${toMoney(c.sahayaPaidMonth,0)}\nPending: AED ${toMoney(c.sahayaOutstandingMonth,0)}\n\nSahayaNidhi is calculated from actual payments received in the selected month.`;
+    stats = ['AED 5', 'Monthly', `Paid AED ${toMoney(c.sahayaPaidMonth,0)}`];
+  } else if(type === 'fund-update'){
     title = 'CASH STATUS';
     subtitle = `Fund Balance - ${dashboardData.activeMonth}`;
-    body = `Fund Balance Cash in Hand:\nAED ${toMoney(c.fundBalance,2)}\n\nNet Member Payments: AED ${toMoney(c.netPaidTill,0)}\nLoan Provided: AED ${toMoney(c.loanProvided,0)}\nLoan Repaid: AED ${toMoney(c.loanRepaid,0)}\n\nFormula:\nNet Member Payments - Loan Provided + Loan Repaid`;
+    body = `Fund Balance Cash in Hand:\nAED ${toMoney(c.fundBalance,2)}\n\nNet Member Payments Till ${dashboardData.activeMonth}: AED ${toMoney(c.netPaidTill,0)}\nLoan Provided Till ${dashboardData.activeMonth}: AED ${toMoney(c.loanProvided,0)}\nLoan Repaid Till ${dashboardData.activeMonth}: AED ${toMoney(c.loanRepaid,0)}\n\nFormula:\nNet Member Payments - Loan Provided + Loan Repaid`;
     stats = [`AED ${toMoney(c.fundBalance,0)}`, 'Cash in Hand', dashboardData.activeMonth];
-  }
-  else {
+  } else {
     title = 'GENERAL REMINDER';
     subtitle = `Avadhi Nidhi - ${dashboardData.activeMonth}`;
-    body = `Dear Members,\n\nPlease check your monthly payment and loan status. Kindly clear pending balances on time.\n\nCurrent Month: ${dashboardData.activeMonth}\nMonthly Pending Members: ${dashboardData.unpaidMembers.length}\nFund Balance: AED ${toMoney(c.fundBalance,2)}`;
+    body = `Dear Members,\n\nPlease check your monthly payment and loan status. Kindly clear pending balances on time.\n\nCurrent Report Month: ${dashboardData.activeMonth}\nMonthly Pending Members: ${dashboardData.unpaidMembers.length}\nMonthly Outstanding: AED ${toMoney(c.monthlyOutstanding,0)}\nLoan Outstanding: AED ${toMoney(c.loanOutstanding,0)}\nFund Balance: AED ${toMoney(c.fundBalance,2)}`;
     stats = [dashboardData.activeMonth, `${dashboardData.totalMembers} Members`, 'Thank You'];
   }
 
@@ -482,11 +598,13 @@ function generatePoster(type){
   $('poster-stats').innerHTML = stats.map(s => `<div class="stat-item">${escapeHtml(s)}</div>`).join('');
   $('whatsappCaption').value = `*${title}*\n_${subtitle}_\n\n${body}\n\n- Treasurer, Avadhi Nidhi`;
 }
+
 function resizePoster(){
   const el = $('poster-canvas');
   el.classList.remove('layout-story','layout-square','layout-a4');
   el.classList.add('layout-' + $('posterSize').value);
 }
+
 function downloadPoster(){
   const canvas = $('poster-canvas');
   html2canvas(canvas, { scale: 3, backgroundColor: '#020617', useCORS: true }).then(cvs => {
@@ -496,6 +614,7 @@ function downloadPoster(){
     link.click();
   });
 }
+
 async function copyWhatsApp(){
   const caption = $('whatsappCaption').value;
   try{
@@ -508,6 +627,7 @@ async function copyWhatsApp(){
     alert('WhatsApp caption copied.');
   }
 }
+
 document.addEventListener('DOMContentLoaded', loadData);
 </script>
 </body>
