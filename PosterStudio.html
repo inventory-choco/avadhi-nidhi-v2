@@ -125,7 +125,7 @@ select option{ background:#161f30; color:#fff; }
         <div class="big-value" id="activeMonth">--</div>
         <div class="small-line">Monthly Expected: <span id="expectedMonth">--</span></div>
         <div class="small-line">Paid This Month - Monthly Payment: <span id="paidMonth">--</span></div>
-        <div class="small-line">Outstanding This Month: <span id="outstandingMonth">--</span></div>
+        <div class="small-line">Monthly Pending: <span id="outstandingMonth">--</span></div>
       </div>
       <div class="data-card">
         <h3><span class="dot bad"></span>Unpaid This Month</h3>
@@ -196,6 +196,7 @@ const PAYMENTS_FILES = {
 const CSV_LOANS = "Loan.csv";
 const MONTHLY_CONTRIBUTION = 100;
 const SAHAYA_AMOUNT = 5;
+const MONTHLY_TOTAL_FROM_SAHAYA_START = MONTHLY_CONTRIBUTION + SAHAYA_AMOUNT;
 const SAHAYA_START_MONTH = "Mar-26";
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -393,33 +394,33 @@ function changeReportMonth(){
 
 function calcMonthlySplit(rawAmount, activeKey){
   const raw = safeNum(rawAmount);
-  if (!isSahayaMonth(activeKey)) {
-    const monthlyNet = raw;
-    return {
-      raw,
-      monthlyNet,
-      savingsPaidForMonthlyDue: Math.min(MONTHLY_CONTRIBUTION, monthlyNet),
-      sahayaPaid: 0,
-      monthlyOutstanding: Math.max(0, MONTHLY_CONTRIBUTION - monthlyNet),
-      sahayaOutstanding: 0
-    };
-  }
+  const sahayaMonth = isSahayaMonth(activeKey);
+  const totalDue = sahayaMonth ? MONTHLY_TOTAL_FROM_SAHAYA_START : MONTHLY_CONTRIBUTION;
 
-  // Avadhi Nidhi logic from user:
-  // Regular monthly savings due = AED 100.
-  // SahayaNidhi due = AED 5 from Mar-26 onwards.
-  // If a member pays AED 105, AED 100 goes to savings and AED 5 goes to SahayaNidhi.
-  // If a member pays only AED 100, savings is treated as paid, but SahayaNidhi is still pending AED 5.
-  // If a member pays more than AED 105, only AED 5 is taken as this month's SahayaNidhi; the extra remains savings/arrears collection.
+  // Correct business logic:
+  // Before Mar-26: monthly due is AED 100.
+  // From Mar-26 onwards: monthly due is AED 105.
+  // AED 100 is Avadhi Nidhi savings and AED 5 is compulsory SahayaNidhi.
+  // If a member does not pay in a Sahaya month, pending must be AED 105.
   const savingsPaidForMonthlyDue = Math.min(MONTHLY_CONTRIBUTION, raw);
-  const sahayaPaid = Math.min(SAHAYA_AMOUNT, Math.max(0, raw - MONTHLY_CONTRIBUTION));
-  const monthlyNet = Math.max(0, raw - sahayaPaid);
-  const monthlyOutstanding = Math.max(0, MONTHLY_CONTRIBUTION - savingsPaidForMonthlyDue);
-  const sahayaOutstanding = Math.max(0, SAHAYA_AMOUNT - sahayaPaid);
+  const sahayaPaid = sahayaMonth ? Math.min(SAHAYA_AMOUNT, Math.max(0, raw - MONTHLY_CONTRIBUTION)) : 0;
+  const monthlyTotalPaid = Math.min(totalDue, raw);
+  const savingsOutstanding = Math.max(0, MONTHLY_CONTRIBUTION - savingsPaidForMonthlyDue);
+  const sahayaOutstanding = sahayaMonth ? Math.max(0, SAHAYA_AMOUNT - sahayaPaid) : 0;
+  const totalOutstanding = Math.max(0, totalDue - monthlyTotalPaid);
 
-  return { raw, monthlyNet, savingsPaidForMonthlyDue, sahayaPaid, monthlyOutstanding, sahayaOutstanding };
+  return {
+    raw,
+    totalDue,
+    monthlyNet: savingsPaidForMonthlyDue,
+    savingsPaidForMonthlyDue,
+    sahayaPaid,
+    monthlyTotalPaid,
+    savingsOutstanding,
+    sahayaOutstanding,
+    monthlyOutstanding: totalOutstanding
+  };
 }
-
 function monthStart(k){
   return monthKeyToDate(k);
 }
@@ -506,13 +507,13 @@ function computeDashboardData(){
   let defaulters = [];
   let memberMonthlyStatus = [];
 
-  const expectedMonth = members * MONTHLY_CONTRIBUTION;
+  const expectedMonth = members * (isSahayaMonth(active) ? MONTHLY_TOTAL_FROM_SAHAYA_START : MONTHLY_CONTRIBUTION);
   const openingExpected = Math.max(...dashboardData.payments.map(r => safeNum(r.OB)), 0);
-  const expectedTillPerMember = openingExpected + (monthsTillActive * MONTHLY_CONTRIBUTION);
+  const expectedTillPerMember = openingExpected + (monthsTillActive * MONTHLY_CONTRIBUTION) + (sahayaMonthsPassed * SAHAYA_AMOUNT);
 
   dashboardData.payments.forEach(r => {
     const split = calcMonthlySplit(r[active], active);
-    paidMonth += split.monthlyNet;
+    paidMonth += split.monthlyTotalPaid;
     sahayaPaidMonth += split.sahayaPaid;
     sahayaOutstandingMonth += split.sahayaOutstanding;
     monthlyOutstanding += split.monthlyOutstanding;
@@ -523,8 +524,10 @@ function computeDashboardData(){
     memberMonthlyStatus.push({
       sn: r.SN,
       name: r.Name,
-      monthlyPaid: split.savingsPaidForMonthlyDue,
+      monthlyPaid: split.monthlyTotalPaid,
       monthlyPending: split.monthlyOutstanding,
+      savingsPaid: split.savingsPaidForMonthlyDue,
+      savingsPending: split.savingsOutstanding,
       sahayaPaid: split.sahayaPaid,
       sahayaPending: split.sahayaOutstanding,
       loanDueThisMonth: loanMonth.dueThisMonth,
@@ -539,7 +542,7 @@ function computeDashboardData(){
         sn: r.SN,
         name: r.Name,
         balance: split.monthlyOutstanding,
-        paidNet: split.savingsPaidForMonthlyDue,
+        paidNet: split.monthlyTotalPaid,
         rawPaid: split.raw
       });
     }
@@ -555,10 +558,10 @@ function computeDashboardData(){
     });
     sahayaPaidTill += rowSahayaPaidTill;
 
-    const netTill = grossTill - rowSahayaPaidTill;
-    const outTill = Math.max(0, expectedTillPerMember - netTill);
+    const totalPaidTillForDue = grossTill;
+    const outTill = Math.max(0, expectedTillPerMember - totalPaidTillForDue);
     if (outTill > 0) {
-      defaulters.push({ sn:r.SN, name:r.Name, balance:outTill, paidNet:netTill });
+      defaulters.push({ sn:r.SN, name:r.Name, balance:outTill, paidNet:totalPaidTillForDue });
     }
   });
 
@@ -619,8 +622,9 @@ function computeDashboardData(){
     paidMonth,
     monthlyOutstanding,
     expectedTill,
+    grossPaidTill,
     netPaidTill,
-    outTill: Math.max(0, expectedTill - netPaidTill),
+    outTill: Math.max(0, expectedTill - grossPaidTill),
     sahayaExpectedMonth,
     sahayaPaidMonth,
     sahayaOutstandingMonth: Math.max(0, sahayaExpectedMonth - sahayaPaidMonth),
@@ -677,31 +681,31 @@ function generatePoster(type){
 
   if(type === 'monthly-unpaid'){
     title = 'PAYMENT REMINDER';
-    subtitle = `${dashboardData.activeMonth} Monthly Savings Pending List`;
-    body = `Members with pending AED 100 Avadhi Nidhi monthly savings for ${dashboardData.activeMonth}:
+    subtitle = `${dashboardData.activeMonth} Monthly Payment Pending List`;
+    body = `Members with pending monthly payment for ${dashboardData.activeMonth}:
 
 ${listText(dashboardData.unpaidMembers)}
 
-Monthly Savings Expected: AED ${toMoney(c.expectedMonth,0)}
-Monthly Savings Paid: AED ${toMoney(c.paidMonth,0)}
-Monthly Savings Pending: AED ${toMoney(c.monthlyOutstanding,0)}
+Monthly Expected: AED ${toMoney(c.expectedMonth,0)}
+Monthly Paid: AED ${toMoney(c.paidMonth,0)}
+Monthly Pending: AED ${toMoney(c.monthlyOutstanding,0)}
 
-Note: SahayaNidhi AED 5 is reported separately.`;
+Note: From Mar-26 onwards, monthly due is AED 105 per member (AED 100 savings + AED 5 SahayaNidhi).`;
     stats = [dashboardData.activeMonth, `Pending: ${dashboardData.unpaidMembers.length}`, `AED ${toMoney(c.monthlyOutstanding,0)}`];
   } else if(type === 'top-defaulters'){
-    title = 'SAVINGS OUTSTANDING SUMMARY';
+    title = 'TOTAL OUTSTANDING SUMMARY';
     subtitle = `Till ${dashboardData.activeMonth}`;
-    body = `Avadhi Nidhi savings outstanding till ${dashboardData.activeMonth}:
+    body = `Total member outstanding till ${dashboardData.activeMonth}:
 
 ${listText(dashboardData.defaulters)}
 
 Opening Expected Per Member: AED ${toMoney(c.openingExpected,0)}
 Total Expected Till Date: AED ${toMoney(c.expectedTill,0)}
-Net Savings Paid Till Date: AED ${toMoney(c.netPaidTill,0)}
-Savings Outstanding Till Date: AED ${toMoney(c.outTill,0)}
+Total Paid Till Date: AED ${toMoney(c.grossPaidTill || 0,0)}
+Outstanding Till Date: AED ${toMoney(c.outTill,0)}
 
-Note: This excludes SahayaNidhi and loan balances.`;
-    stats = [`AED ${toMoney(c.outTill,0)}`, `${dashboardData.defaulters.length} Members`, 'Savings Only'];
+Note: This includes monthly savings and compulsory SahayaNidhi. Loan balance is shown separately.`;
+    stats = [`AED ${toMoney(c.outTill,0)}`, `${dashboardData.defaulters.length} Members`, 'Savings + Sahaya'];
   } else if(type === 'loan-status'){
     title = 'LOAN STATUS';
     subtitle = `Updated Till ${dashboardData.activeMonth}`;
